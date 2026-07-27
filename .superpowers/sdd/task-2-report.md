@@ -33,3 +33,7 @@ Status: IN PROGRESS
 - `node --check index.js` → syntax OK. Verified via grep that every function in the Produces
   list appears exactly once and in Attrition's original order.
 - Committing code now, then will write + run task-2-verify.js.
+
+---
+## Completion (controller salvage — implementer subagent paused mid-verify)
+Status: DONE. The implementer committed the port (5296b0d) with grep gate clean, then paused waiting on the slow verify. Controller salvaged: committed the verify script, ran it (background, 264s): **6 passed, 0 failed** (ag=0 baseline E-zero/no-frontier/held-in-(0,1); monotone fierce<gentle<off; frontier+segs at ag=1; determinism). Independent review confirmed the port is faithful — normalized-diff check found ONLY the CS→FS/PAD→FPAD rename + the two state.activeAg edits (+ one inert comment-placement difference). Grep gates: no EROSION_AG, no bare CS/PAD anywhere. COUNTS/BALANCE/WAVE_CAP present verbatim.
