@@ -10,3 +10,4 @@
 - held[L] > held[C] > held[R] and "more ag → less held" are PHYSICALLY REQUIRED directions.
 
 ## Task log
+Task 1: complete (commits 7eed98f..37c2f40, verify 8/8, review clean incl browser load; byte-identical to brief, CSS byte-identical to Attrition, wide 3830×1690 landscape canvas scales correctly — first non-square in family). Launch config triptych:3466 added by controller.
