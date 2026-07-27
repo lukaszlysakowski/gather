@@ -54,8 +54,369 @@ const state = {
 
 const ctrlButtons = {};
 
+// --- flow field constants and implementation ---
+const COUNTS = [800, 1600, 2600];         // Count: Low / Med / High (total particle budget)
+const BALANCE = [0.4, 0.55, 0.7];         // Balance: depositor share — More-eroders / Even / More-depositors
+const WAVE_CAP = [1, 6, 14];              // Settle: Off / Light / Full
+const FLOW_SPEED = 6;
+const CURL_H = 1.5;
+const DEP_AMOUNT = 1;
+const ERODE_AMOUNT = 1;
+const SLOW = 0.7;
+const DIVERT = 0.9;
+const SLOW_FLOOR = 0.15;
+const HUNT = 1.2;
+
+function makeNoise2D(seed) {
+    function hash(ix, iy) {
+        let h = (Math.imul(ix, 374761393) + Math.imul(iy, 668265263) + Math.imul(seed, 974634167)) | 0;
+        h = Math.imul(h ^ (h >>> 13), 1274126177);
+        return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+    }
+    const smooth = t => t * t * (3 - 2 * t);
+    function vnoise(x, y) {
+        const ix = Math.floor(x), iy = Math.floor(y), fx = x - ix, fy = y - iy;
+        const a = hash(ix, iy), b = hash(ix + 1, iy), c = hash(ix, iy + 1), d = hash(ix + 1, iy + 1);
+        const u = smooth(fx), v = smooth(fy);
+        return a * (1 - u) * (1 - v) + b * u * (1 - v) + c * (1 - u) * v + d * u * v;
+    }
+    return function fbm(x, y) {
+        return (vnoise(x, y) + 0.5 * vnoise(x * 2.07 + 19.3, y * 2.07 + 7.7)) / 1.5;
+    };
+}
+
+function rollField() {
+    const ns = [0.0034, 0.0022, 0.0013][ui.scale];
+    const strength = [0.7, 1.0, 1.45][ui.strength];
+    state.field = { ns, strength, ox: random(1000), oy: random(1000), fbm: makeNoise2D(state.masterSeed + 4099) };
+}
+
+function potential(x, y) {
+    const f = state.field;
+    return f.fbm(x * f.ns + f.ox, y * f.ns + f.oy) * 900 * f.strength;
+}
+
+function baseField(x, y) {
+    const dpsi_dx = (potential(x + CURL_H, y) - potential(x - CURL_H, y)) / (2 * CURL_H);
+    const dpsi_dy = (potential(x, y + CURL_H) - potential(x, y - CURL_H)) / (2 * CURL_H);
+    let vx = dpsi_dy, vy = -dpsi_dx;
+    const m = Math.hypot(vx, vy);
+    if (m < 1e-9) return { vx: 0, vy: 0 };
+    return { vx: (vx / m) * FLOW_SPEED, vy: (vy / m) * FLOW_SPEED };
+}
+
+// Depositors channelize on the ground they still HOLD (Cpos), like Drift but on C⁺ not raw D.
+function depBentField(x, y) {
+    const v = baseField(x, y);
+    const d = CposHatAt(x, y);
+    if (d <= 0) return v;
+    const s = Math.max(SLOW_FLOOR, 1 - SLOW * d);
+    const g = gridGrad(CposHatAt, x, y);
+    const gm = Math.hypot(g.gx, g.gy);
+    let tx = 0, ty = 0;
+    if (gm > 1e-6) {
+        const ux = -g.gy / gm, uy = g.gx / gm;      // rot90 of unit gradient (follow the contour)
+        const speed = Math.hypot(v.vx, v.vy);
+        tx = DIVERT * d * ux * speed;
+        ty = DIVERT * d * uy * speed;
+    }
+    return { vx: s * v.vx + tx, vy: s * v.vy + ty };
+}
+
+// Eroders HUNT: steer up the deposition gradient toward the channels depositors built.
+function eroBentField(x, y) {
+    const v = baseField(x, y);
+    const ag = state.activeAg;
+    if (ag === 0) return v;
+    const hd = DhatAt(x, y);
+    if (hd <= 0) return v;
+    const g = gridGrad(DhatAt, x, y);
+    const gm = Math.hypot(g.gx, g.gy);
+    if (gm <= 1e-6) return v;
+    const ux = g.gx / gm, uy = g.gy / gm;           // UP the gradient (toward more density)
+    const speed = Math.hypot(v.vx, v.vy);
+    return { vx: v.vx + HUNT * ag * hd * ux * speed, vy: v.vy + HUNT * ag * hd * uy * speed };
+}
+
+// --- grid helpers (deposition, erosion, contested field) ---
+
+function pageToGrid(x, y) {
+    const span = FS - 2 * FPAD;
+    return { gx: ((x - FPAD) / span) * GRID_N, gy: ((y - FPAD) / span) * GRID_N };
+}
+
+function gridsReset() {
+    state.D = new Float32Array(GRID_N * GRID_N);
+    state.E = new Float32Array(GRID_N * GRID_N);
+    state.Dmax = 1;
+    state.CposMax = 1;
+}
+
+function splat(grid, x, y, amount) {
+    const { gx, gy } = pageToGrid(x, y);
+    const ix = Math.floor(gx), iy = Math.floor(gy);
+    if (ix < 0 || iy < 0 || ix >= GRID_N - 1 || iy >= GRID_N - 1) return;
+    const fx = gx - ix, fy = gy - iy;
+    grid[iy * GRID_N + ix]           += amount * (1 - fx) * (1 - fy);
+    grid[iy * GRID_N + ix + 1]       += amount * fx * (1 - fy);
+    grid[(iy + 1) * GRID_N + ix]     += amount * (1 - fx) * fy;
+    grid[(iy + 1) * GRID_N + ix + 1] += amount * fx * fy;
+}
+
+function smoothGrid(grid) {
+    const n = GRID_N, tmp = new Float32Array(n * n);
+    for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+        const l = x > 0 ? grid[y * n + x - 1] : grid[y * n + x];
+        const r = x < n - 1 ? grid[y * n + x + 1] : grid[y * n + x];
+        tmp[y * n + x] = (l + 2 * grid[y * n + x] + r) / 4;
+    }
+    for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+        const u = y > 0 ? tmp[(y - 1) * n + x] : tmp[y * n + x];
+        const dn = y < n - 1 ? tmp[(y + 1) * n + x] : tmp[y * n + x];
+        grid[y * n + x] = (u + 2 * tmp[y * n + x] + dn) / 4;
+    }
+}
+
+function gridNorm() {
+    const D = state.D, E = state.E;
+    let dm = 0, cm = 0;
+    for (let i = 0; i < D.length; i++) {
+        if (D[i] > dm) dm = D[i];
+        const c = D[i] - E[i];
+        if (c > cm) cm = c;
+    }
+    state.Dmax = dm > 1e-9 ? dm : 1;
+    state.CposMax = cm > 1e-9 ? cm : 1;
+}
+
+// bilinear sample of an arbitrary per-cell value function f(idx)
+function sampleBilinear(fCell, x, y) {
+    const { gx, gy } = pageToGrid(x, y);
+    const ix = Math.floor(gx), iy = Math.floor(gy);
+    if (ix < 0 || iy < 0 || ix >= GRID_N - 1 || iy >= GRID_N - 1) return 0;
+    const fx = gx - ix, fy = gy - iy, n = GRID_N;
+    return fCell(iy * n + ix) * (1 - fx) * (1 - fy) + fCell(iy * n + ix + 1) * fx * (1 - fy) +
+        fCell((iy + 1) * n + ix) * (1 - fx) * fy + fCell((iy + 1) * n + ix + 1) * fx * fy;
+}
+
+function Cat(x, y) { return sampleBilinear(i => state.D[i] - state.E[i], x, y); }
+function DhatAt(x, y) { return sampleBilinear(i => state.D[i] / state.Dmax, x, y); }
+function CposHatAt(x, y) { return sampleBilinear(i => Math.max(state.D[i] - state.E[i], 0) / state.CposMax, x, y); }
+
+function gridGrad(sampler, x, y) {
+    const h = (FS - 2 * FPAD) / GRID_N;
+    return { gx: (sampler(x + h, y) - sampler(x - h, y)) / (2 * h), gy: (sampler(x, y + h) - sampler(x, y - h)) / (2 * h) };
+}
+
+// --- waves: two-species advection, settle to truce ---
+const DT = 1;
+const MAX_STEPS = 400;
+const STALL_EPS = 0.4;
+const SETTLE_EPS = 0.02;
+const MIN_PTS = 2;
+
+function inRegion(x, y) { return x >= FPAD && x <= FS - FPAD && y >= FPAD && y <= FS - FPAD; }
+
+function waveStarts(rng, P) {
+    const span = FS - 2 * FPAD, pts = [];
+    if (ui.seeding === 0) {
+        for (let i = 0; i < P; i++) pts.push({ x: FPAD + rng() * span, y: FPAD + rng() * span });
+    } else if (ui.seeding === 1) {
+        const side = Math.floor(rng() * 4);
+        for (let i = 0; i < P; i++) {
+            const t = rng(), inset = FPAD + rng() * span * 0.04;
+            if (side === 0) pts.push({ x: FPAD + t * span, y: inset });
+            else if (side === 1) pts.push({ x: FS - inset, y: FPAD + t * span });
+            else if (side === 2) pts.push({ x: FPAD + t * span, y: FS - inset });
+            else pts.push({ x: inset, y: FPAD + t * span });
+        }
+    } else {
+        const nBlobs = 2 + Math.floor(rng() * 3), blobs = [];
+        for (let b = 0; b < nBlobs; b++) blobs.push({ cx: FPAD + rng() * span, cy: FPAD + rng() * span, r: span * (0.04 + rng() * 0.06) });
+        for (let i = 0; i < P; i++) {
+            const b = blobs[Math.floor(rng() * nBlobs)];
+            const a = rng() * Math.PI * 2, rad = b.r * Math.sqrt(rng());
+            pts.push({ x: b.cx + Math.cos(a) * rad, y: b.cy + Math.sin(a) * rad });
+        }
+    }
+    return pts;
+}
+
+function advect(start, bentFn) {
+    const pts = [{ x: start.x, y: start.y }];
+    let x = start.x, y = start.y;
+    for (let step = 0; step < MAX_STEPS; step++) {
+        const k1 = bentFn(x, y);
+        const k2 = bentFn(x + 0.5 * DT * k1.vx, y + 0.5 * DT * k1.vy);
+        const nx = x + DT * k2.vx, ny = y + DT * k2.vy;
+        if (Math.hypot(nx - x, ny - y) < STALL_EPS) break;
+        x = nx; y = ny;
+        pts.push({ x, y });
+        if (!inRegion(x, y)) break;
+    }
+    return pts;
+}
+
+function runWaves() {
+    gridsReset();
+    gridNorm();
+    state.paths = [];
+    const maxWaves = WAVE_CAP[ui.settle];
+    const total = COUNTS[ui.count];
+    const depShare = BALANCE[ui.balance];
+    const ag = state.activeAg;
+    const Pd = Math.round(total * depShare);
+    const Pe = ag === 0 ? 0 : total - Pd;
+    state.wavesRun = 0;
+    for (let w = 0; w < maxWaves; w++) {
+        const before = new Float32Array(state.D.length);
+        for (let i = 0; i < before.length; i++) before[i] = state.D[i] - state.E[i];   // C before
+        // Phase 1: advect BOTH species on the frozen field (no splatting yet)
+        const depRng = seededRng((state.masterSeed + w * 9161) >>> 0);
+        const eroRng = seededRng((state.masterSeed + w * 7331) >>> 0);
+        const depStarts = waveStarts(depRng, Pd);
+        const eroStarts = Pe > 0 ? waveStarts(eroRng, Pe) : [];
+        const depPaths = [];
+        for (const s of depStarts) { const p = advect(s, depBentField); if (p.length >= MIN_PTS) depPaths.push(p); }
+        const eroPaths = [];
+        for (const s of eroStarts) { const p = advect(s, eroBentField); if (p.length >= MIN_PTS) eroPaths.push(p); }
+        // Phase 2: apply all deposits (+D) and all scour (+E), THEN smooth/normalize
+        for (const p of depPaths) { state.paths.push({ pts: p }); for (const v of p) splat(state.D, v.x, v.y, DEP_AMOUNT); }
+        for (const p of eroPaths) { for (const v of p) splat(state.E, v.x, v.y, ag * ERODE_AMOUNT); }
+        smoothGrid(state.D); smoothGrid(state.E); gridNorm();
+        state.wavesRun = w + 1;
+        // settle delta on C
+        let diff = 0, cabs = 0;
+        for (let i = 0; i < state.D.length; i++) { const c = state.D[i] - state.E[i]; diff += Math.abs(c - before[i]); cabs += Math.abs(c); }
+        const delta = diff / Math.max(cabs, 1e-9);
+        if (w > 0 && delta < SETTLE_EPS) break;
+    }
+}
+
+// --- rendering: segment culling and frontier ---
+const HEAVY_THRESH = 0.28;
+
+// Split a depositor path into held (C>0) runs, cutting at interpolated C=0 crossings.
+function cullPath(pts) {
+    const runs = [];
+    let cur = [];
+    let prev = pts[0], prevC = Cat(prev.x, prev.y);
+    if (prevC > 0) cur.push(prev);
+    for (let i = 1; i < pts.length; i++) {
+        const p = pts[i], c = Cat(p.x, p.y);
+        if ((prevC > 0) !== (c > 0)) {
+            // crossing: interpolate the C=0 point between prev and p
+            const t = prevC / (prevC - c);   // prevC>0,c<=0 or vice versa → t in (0,1]
+            const cx = prev.x + t * (p.x - prev.x), cy = prev.y + t * (p.y - prev.y);
+            if (prevC > 0) { cur.push({ x: cx, y: cy }); if (cur.length >= 2) runs.push(cur); cur = []; }
+            else { cur = [{ x: cx, y: cy }]; }
+        }
+        if (c > 0) cur.push(p);
+        prev = p; prevC = c;
+    }
+    if (cur.length >= 2) runs.push(cur);
+    // classify each run by mean CposHat
+    return runs.map(run => {
+        let sum = 0; for (const v of run) sum += CposHatAt(v.x, v.y);
+        const mean = sum / run.length;
+        return { pts: run, cls: mean >= HEAVY_THRESH ? 1 : 0 };
+    });
+}
+
+function samplePt(gx, gy) {
+    const cell = (FS - 2 * FPAD) / GRID_N;
+    return { x: FPAD + (gx + 0.5) * cell, y: FPAD + (gy + 0.5) * cell };
+}
+
+function marchCell(x, y, v00, v10, v01, v11, lv, segs) {
+    let c = 0;
+    if (v00 >= lv) c |= 1;
+    if (v10 >= lv) c |= 2;
+    if (v11 >= lv) c |= 4;
+    if (v01 >= lv) c |= 8;
+    if (c === 0 || c === 15) return;
+    const t = (a, b) => (lv - a) / (b - a);
+    const top = () => [x + t(v00, v10), y], bottom = () => [x + t(v01, v11), y + 1];
+    const left = () => [x, y + t(v00, v01)], right = () => [x + 1, y + t(v10, v11)];
+    const add = (p, q) => segs.push([p[0], p[1], q[0], q[1]]);
+    switch (c) {
+        case 1: case 14: add(left(), top()); break;
+        case 2: case 13: add(top(), right()); break;
+        case 3: case 12: add(left(), right()); break;
+        case 4: case 11: add(right(), bottom()); break;
+        case 6: case 9: add(top(), bottom()); break;
+        case 7: case 8: add(left(), bottom()); break;
+        case 5: { const mid = (v00 + v10 + v01 + v11) / 4 >= lv; if (mid) { add(left(), top()); add(right(), bottom()); } else { add(left(), bottom()); add(top(), right()); } break; }
+        case 10: { const mid = (v00 + v10 + v01 + v11) / 4 >= lv; if (mid) { add(top(), right()); add(left(), bottom()); } else { add(left(), top()); add(right(), bottom()); } break; }
+    }
+}
+
+function chainSegments(segs, keyFn) {
+    const key = keyFn || ((x, y) => x + ',' + y);
+    const adj = new Map();
+    const addAdj = (k, si) => { if (!adj.has(k)) adj.set(k, []); adj.get(k).push(si); };
+    segs.forEach((s, si) => { addAdj(key(s[0], s[1]), si); addAdj(key(s[2], s[3]), si); });
+    const used = new Uint8Array(segs.length), chains = [];
+    for (let si = 0; si < segs.length; si++) {
+        if (used[si]) continue;
+        used[si] = 1;
+        const chain = [[segs[si][0], segs[si][1]], [segs[si][2], segs[si][3]]];
+        for (const end of [1, 0]) {
+            while (true) {
+                const tip = end ? chain[chain.length - 1] : chain[0];
+                const cands = (adj.get(key(tip[0], tip[1])) || []).filter(j => !used[j]);
+                if (!cands.length) break;
+                const j = cands[0]; used[j] = 1;
+                const s = segs[j];
+                const other = (Math.abs(s[0] - tip[0]) < 1e-9 && Math.abs(s[1] - tip[1]) < 1e-9) ? [s[2], s[3]] : [s[0], s[1]];
+                if (end) chain.push(other); else chain.unshift(other);
+            }
+        }
+        chains.push(chain);
+    }
+    return chains;
+}
+
+function chaikin(pts) {
+    if (pts.length < 3) return pts;
+    const out = [pts[0]];
+    for (let i = 0; i < pts.length - 1; i++) {
+        const a = pts[i], b = pts[i + 1];
+        out.push({ x: a.x * 0.75 + b.x * 0.25, y: a.y * 0.75 + b.y * 0.25 });
+        out.push({ x: a.x * 0.25 + b.x * 0.75, y: a.y * 0.25 + b.y * 0.75 });
+    }
+    out.push(pts[pts.length - 1]);
+    return out;
+}
+
+// marching squares at level 0 on the C grid (C = D − E), but ONLY in contested cells —
+// those where erosion is actually present (some corner E > EROSION_EPS). Otherwise C = D
+// crosses 0 merely at the EDGE of deposit coverage, which is not a frontier. This makes the
+// frontier the true truce line (where the two armies met), and gives Erosion=Off (E≡0) an
+// empty frontier as the spec requires.
+const EROSION_EPS = 1e-4;
+function marchLevelC() {
+    const n = GRID_N, D = state.D, E = state.E, segs = [];
+    const cval = i => D[i] - E[i];
+    for (let y = 0; y < n - 1; y++) for (let x = 0; x < n - 1; x++) {
+        const e00 = E[y * n + x], e10 = E[y * n + x + 1], e01 = E[(y + 1) * n + x], e11 = E[(y + 1) * n + x + 1];
+        if (e00 < EROSION_EPS && e10 < EROSION_EPS && e01 < EROSION_EPS && e11 < EROSION_EPS) continue; // uncontested cell
+        marchCell(x, y, cval(y * n + x), cval(y * n + x + 1), cval((y + 1) * n + x), cval((y + 1) * n + x + 1), 0, segs);
+    }
+    const fkey = (x, y) => x.toFixed(6) + ',' + y.toFixed(6);
+    return chainSegments(segs, fkey).map(ch => chaikin(chaikin(ch.map(gp => samplePt(gp[0], gp[1])))));
+}
+
+function buildRender() {
+    state.segments = [];
+    for (const p of state.paths) for (const seg of cullPath(p.pts)) state.segments.push(seg);
+    state.frontier = state.D ? marchLevelC() : [];
+    let held = 0;
+    if (state.D) for (let i = 0; i < state.D.length; i++) if (state.D[i] - state.E[i] > 0) held++;
+    state.heldFrac = state.D ? held / state.D.length : 0;
+}
+
 // --- pipeline hooks (filled by later tasks) ---
-function rollField() {}
 function runPanels() {}
 function buildThread() {}
 
