@@ -417,7 +417,23 @@ function buildRender() {
 }
 
 // --- pipeline hooks (filled by later tasks) ---
-function runPanels() {}
+function runPanels() {
+    const triad = PROGRESSIONS[CONTROL_DEFS.find(d => d.key === 'progression').opts[ui.progression]];
+    state.panels = [];
+    state.held = [0, 0, 0];
+    for (let i = 0; i < 3; i++) {
+        state.activeAg = triad[i];
+        runWaves();       // reads state.field (shared) + state.activeAg; fills state.D/E, state.paths
+        buildRender();    // fills state.segments, state.frontier, state.heldFrac (field coords)
+        // capture this panel's outputs (the scratch fields are overwritten by the next run)
+        state.panels.push({
+            segments: state.segments.map(s => ({ cls: s.cls, pts: s.pts.map(p => ({ x: p.x, y: p.y })) })),
+            frontier: state.frontier.map(pl => pl.map(p => ({ x: p.x, y: p.y }))),
+            heldFrac: state.heldFrac
+        });
+        state.held[i] = state.heldFrac;
+    }
+}
 function buildThread() {}
 
 function regenerate(newSeed) {
