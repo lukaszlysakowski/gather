@@ -612,6 +612,7 @@ function setupControls() {
     document.getElementById('btn-png').addEventListener('click', () => exportPNG(1));
     document.getElementById('btn-png5').addEventListener('click', () => exportPNG(5));
     document.getElementById('btn-svg-panels').addEventListener('click', () => exportPanelSVGs());
+    document.getElementById('btn-png-panels').addEventListener('click', () => exportPanelPNGs(5));
 }
 
 function polyToPath(pts) {
@@ -711,6 +712,52 @@ function exportPNG(scale) {
     saveCanvas(`triptych-seed${state.masterSeed}-${scale}x`, 'png');
     pixelDensity(1);
     renderAll();
+}
+
+// draw one polyline into an offscreen graphics buffer (canvas analog of polyToPath)
+function drawPolyTo(pg, pts) {
+    const w = wobblePts(pts);
+    pg.beginShape();
+    for (const p of w) pg.vertex(p.x, p.y);
+    pg.endShape();
+}
+
+// render one panel into a graphics buffer in LOCAL coords (origin at the panel's top-left) — the
+// raster analog of buildPanelSVG, so a per-panel PNG matches the per-panel SVG (flip carried
+// through panelMap; same stitched thread as the composite).
+function drawPanelTo(pg, i) {
+    const rect = PANELS[i], s = rect.s;
+    const local = pt => { const q = panelMap(pt, rect); return { x: q.x - rect.x0, y: q.y - rect.y0 }; };
+    pg.background(PAPER);
+    pg.noFill();
+    pg.stroke(INK);
+    pg.strokeWeight(0.8);
+    for (const seg of state.panels[i].segments) if (seg.cls === 0) drawPolyTo(pg, seg.pts.map(local));
+    pg.strokeWeight(1.4);
+    for (const seg of state.panels[i].segments) if (seg.cls === 1) drawPolyTo(pg, seg.pts.map(local));
+    const thread = stitchThread(panelThreadChains(i), local);
+    if (thread.length >= 2) { pg.stroke(RED); pg.strokeWeight(3.2); drawPolyTo(pg, thread); }
+    pg.stroke(INK);
+    pg.strokeWeight(2.0);
+    pg.noFill();
+    pg.rect(0, 0, s, s);
+    pg.noStroke();
+    pg.fill(INK);
+    pg.textSize(24);
+    pg.textAlign(LEFT, BASELINE);
+    pg.text(`Triptych · seed ${state.masterSeed} · ${PANEL_NAMES[i]} · ${Math.round(100 * state.held[i])}% held`, 24, s - 24);
+    pg.noFill();
+}
+
+function exportPanelPNGs(scale) {
+    for (let i = 0; i < 3; i++) {
+        const rect = PANELS[i];
+        const pg = createGraphics(rect.s, rect.s);
+        pg.pixelDensity(scale);
+        drawPanelTo(pg, i);
+        saveCanvas(pg, `triptych-seed${state.masterSeed}-${PANEL_NAMES[i]}-${scale}x`, 'png');
+        pg.remove();
+    }
 }
 
 function setup() {

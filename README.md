@@ -32,10 +32,11 @@ per panel in the browser. Lower Settle, or expect the wait at higher Count.
 - **Settle** — Off/Light/Full
 - **Style** — Wobble (default Off)
 - randomize / refresh · click canvas = new seed
-- **Exports:** `svg` (full composite), `png` (1×), `png 5x` (high-res raster), and `svg · per
-  panel` — three standalone SVGs (left / center / right), each a clean square in its own
-  coordinates with its border, streaks, its slice of the red thread, and a per-panel signature
-  (the right panel's SVG is mirrored, matching the composition)
+- **Exports:** `svg` (full composite), `png` (1×), `png 5x` (high-res raster), plus per-panel
+  exports — `svg · per panel` and `png · per panel` (5×) — each writing three standalone files
+  (left / center / right), a clean square in its own coordinates with its border, streaks, its
+  slice of the red thread, and a per-panel signature (the right panel is mirrored, matching the
+  composition)
 
 ## How it works
 
