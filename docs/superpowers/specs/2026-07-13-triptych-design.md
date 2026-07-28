@@ -249,8 +249,9 @@ this is the heaviest build in the family (3 settles per regenerate) and the sess
 
 ## Infrastructure
 
-- New git repo at `/Users/lukasz/genuary-2026/sketches/triptych`.
-- Launch config `triptych`: `npx serve <dir> --listen 3466`, port 3466, added to
+- Git repo at `/Users/lukasz/genuary-2026/sketches/gather` (folder + launch config renamed from
+  `triptych` on 2026-07-28 along with the piece).
+- Launch config `gather`: `npx serve <dir> --listen 3466`, port 3466, in
   `/Users/lukasz/claude/self-redaction/.claude/launch.json`.
 - Read-only sources (never modify): `~/genuary-2026/sketches/attrition/*` (the engine to port +
   harness + CSS + export kit).
