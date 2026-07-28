@@ -31,7 +31,11 @@ per panel in the browser. Lower Settle, or expect the wait at higher Count.
   gentlest is always placed in the center, so a wider span = more ruined wings)
 - **Settle** — Off/Light/Full
 - **Style** — Wobble (default Off)
-- randomize / refresh / svg / png / png 4x · click canvas = new seed
+- randomize / refresh · click canvas = new seed
+- **Exports:** `svg` (full composite), `png` (1×), `png 5x` (high-res raster), and `svg · per
+  panel` — three standalone SVGs (left / center / right), each a clean square in its own
+  coordinates with its border, streaks, its slice of the red thread, and a per-panel signature
+  (the right panel's SVG is mirrored, matching the composition)
 
 ## How it works
 
