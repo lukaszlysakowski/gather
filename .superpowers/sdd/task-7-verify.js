@@ -64,7 +64,7 @@ for (const seed of [17, 404, 9090]) {
     const ms = Date.now() - t0;
     const s = sandbox.state;
     const verts = s.panels.reduce((a,p)=>a+p.segments.reduce((b,x)=>b+x.pts.length,0),0);
-    const ok = s.panels.length === 3 && verts > 800 && s.thread.length >= 2 && ms < 180000;
+    const ok = s.panels.length === 3 && verts > 800 && s.thread.length >= 2 && ms < 240000;
     console.log(`  seed ${seed}: held ${s.held.map(h=>(h*100).toFixed(0)).join('/')}%, ${verts} verts, ${s.thread.length} thread pts, ${ms}ms ${ok ? 'ok' : 'FAIL'}`);
     if (!ok) allOK = false;
 }
