@@ -535,9 +535,7 @@ function panelMap(pt, rect) {
 function signatureText() {
     const d = new Date();
     const p2 = n => String(n).padStart(2, '0');
-    const h = state.held.map(f => Math.round(100 * f));
-    return `Gather · seed ${state.masterSeed} · ${h[0]} ${h[1]} ${h[2]}% held  ` +
-        `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())} ${p2(d.getHours())}:${p2(d.getMinutes())}`;
+    return `Gather · seed ${state.masterSeed} · ${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}`;
 }
 
 function renderAll() {
@@ -567,8 +565,8 @@ function renderAll() {
     noStroke();
     fill(INK);
     textSize(24);
-    textAlign(LEFT, BASELINE);
-    text(signatureText(), P, TH - P + 40);
+    textAlign(RIGHT, BASELINE);
+    text(signatureText(), TW - P, TH - P + 40);
     noFill();
 }
 
@@ -651,7 +649,7 @@ function buildSVG() {
     s += svgPass('Streaks-heavy', INK, 0.8, heavy);
     s += svgPass('Thread', RED, 1.7, threadPaths);
     s += `  <g id="Signature" inkscape:groupmode="layer" inkscape:label="Signature">\n` +
-        `    <text x="${P}" y="${TH - P + 40}" font-family="monospace" font-size="24" fill="${INK}">${signatureText()}</text>\n  </g>\n`;
+        `    <text x="${TW - P}" y="${TH - P + 40}" text-anchor="end" font-family="monospace" font-size="24" fill="${INK}">${signatureText()}</text>\n  </g>\n`;
     s += '</svg>\n';
     return s;
 }

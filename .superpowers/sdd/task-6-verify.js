@@ -48,7 +48,7 @@ const ds = [...svg.matchAll(/ d="([^"]+)"/g)].map(m => m[1]);
 check('paths exist', ds.length > 5, `${ds.length}`);
 check('M/L-only paths', ds.every(d => /^M( -?\d+(\.\d+)?){2}( L( -?\d+(\.\d+)?){2})+$/.test(d.replace(/ +/g, ' '))));
 check('viewBox correct', svg.includes('viewBox="0 0 3830 1690"'));
-check('signature shows three held values', /Gather · seed 4242 · \d+ \d+ \d+% held/.test(svg));
+check('signature shows seed + date (no vars/time)', /Gather · seed 4242 · \d{4}-\d{2}-\d{2}</.test(svg));
 
 vm.runInContext('ui.wobble = 1;', sandbox);
 const w1 = vm.runInContext('buildSVG()', sandbox);
