@@ -43,7 +43,7 @@ function run(setup) {
 const base = run('state.masterSeed = 4242;');
 check('base: 3 panels + thread populated', base.panels === 3 && base.thread >= 2);
 check('base: substantial ink (>1500 vertices)', base.verts > 1500, `${base.verts}`);
-check('base: held decreases L→R', base.held[0] > base.held[1] && base.held[1] > base.held[2], `${base.held.map(h=>h.toFixed(3)).join(' > ')}`);
+check('base: held center densest, then left, then right', base.held[1] > base.held[0] && base.held[0] > base.held[2], `C ${base.held[1].toFixed(3)} > L ${base.held[0].toFixed(3)} > R ${base.held[2].toFixed(3)}`);
 
 // Progression widens the span: Late holds less on the right than Early does
 const early = run('state.masterSeed = 4242; ui.progression = 0;');

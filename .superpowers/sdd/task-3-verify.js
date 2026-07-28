@@ -33,8 +33,10 @@ check('three panels captured', st.panels.length === 3);
 check('each panel has segments + frontier arrays', st.panels.every(p => Array.isArray(p.segments) && Array.isArray(p.frontier)));
 check('held has 3 values', st.held.length === 3 && st.held.every(h => h >= 0 && h <= 1));
 
-// THE PROGRESSION: more erosion (L→R) holds strictly less ground. Physically required.
-check('held strictly decreases L→C→R', st.held[0] > st.held[1] && st.held[1] > st.held[2], `${st.held.map(h=>h.toFixed(3)).join(' > ')}`);
+// PLACEMENT: the dominant CENTER panel holds the densest (gentlest-eroded) render; wings flank
+// it — LEFT medium, RIGHT heaviest. So held[C] > held[L] > held[R], strictly. (Same three erosion
+// levels as the triad; only their placement into panels differs — see PANEL_AG_ORDER.)
+check('held: center densest, then left, then right', st.held[1] > st.held[0] && st.held[0] > st.held[2], `C ${st.held[1].toFixed(3)} > L ${st.held[0].toFixed(3)} > R ${st.held[2].toFixed(3)}`);
 
 // shared field: all three panels rolled from ONE field (rollField ran once). Assert the field
 // params object identity did not change across the run (rollField not re-called in runPanels).
@@ -52,7 +54,7 @@ check('shared field unchanged across the 3 panel runs', oneField);
 
 // progression triad monotonic for a second seed too
 vm.runInContext('state.masterSeed=98765; regenerate(false);', sandbox);
-check('held decreases L→R (2nd seed)', sandbox.state.held[0] > sandbox.state.held[1] && sandbox.state.held[1] > sandbox.state.held[2], `${sandbox.state.held.map(h=>h.toFixed(3)).join(' > ')}`);
+check('held: center densest, then left, then right (2nd seed)', sandbox.state.held[1] > sandbox.state.held[0] && sandbox.state.held[0] > sandbox.state.held[2], `C ${sandbox.state.held[1].toFixed(3)} > L ${sandbox.state.held[0].toFixed(3)} > R ${sandbox.state.held[2].toFixed(3)}`);
 
 // determinism
 vm.runInContext('state.masterSeed=55; regenerate(false); globalThis.__a = JSON.stringify(state.held) + state.panels.map(p=>p.segments.length).join(",");', sandbox);

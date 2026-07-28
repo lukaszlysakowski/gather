@@ -1,16 +1,16 @@
 # Triptych
 
 One contested ground, three moments. A single [Attrition](https://github.com/lukaszlysakowski/attrition)
-field — the same seed, the same shared curl terrain — rendered three times across the panels as
-the same battle unfolding in time: LEFT the ground barely touched, CENTER the contest at its
-height, RIGHT the ground overrun. Read left to right, it is a Harold Fisk river-meander map made
-literal — the history of a channel that erased and rewrote itself — in the form of a religious
-triptych: a dominant central image flanked by two attending wings.
+field — the same seed, the same shared curl terrain — rendered three times at three erosion
+levels. The dominant CENTER panel carries the densest, most-intact render (the ground at its
+richest); the wings flank it in two states of ruin — LEFT partly eroded, RIGHT overrun. It is a
+Harold Fisk river-meander map made literal — the history of a channel that erased and rewrote
+itself — in the form of a religious triptych: a dominant central image flanked by two attending
+wings, the intact core between two ruins.
 
 One red line: a single continuous thread stitched from each panel's dominant frontier (its C=0
-truce line) across the gutters. Because erosion grows left→right, the thread starts short and
-simple and becomes long and tortured as it travels — the war intensifying along one unbroken
-line.
+truce line) across the gutters — one war along one unbroken line, spanning the intact center out
+to the overrun right.
 
 ## Running
 
@@ -27,8 +27,8 @@ per panel in the browser. Lower Settle, or expect the wait at higher Count.
 
 - **Field** — Scale · Strength (the shared curl terrain, identical across panels)
 - **Populations** — Count · Balance · Seeding (identical across panels)
-- **Progression** — Early / Rising / Late (the erosion triad: how far the three panels span from
-  untouched to overrun)
+- **Progression** — Early / Rising / Late (the erosion triad: how far the three levels span; the
+  gentlest is always placed in the center, so a wider span = more ruined wings)
 - **Settle** — Off/Light/Full
 - **Style** — Wobble (default Off)
 - randomize / refresh / svg / png / png 4x · click canvas = new seed
@@ -39,9 +39,11 @@ per panel in the browser. Lower Settle, or expect the wait at higher Count.
   it at three erosion levels (the Progression triad).
 - Each panel's depositor streaklines are cut into voids wherever the eroders won (C ≤ 0); the
   panels are mapped into a center-dominant three-square layout.
+- The three erosion levels are placed into panels via `PANEL_AG_ORDER = [1,0,2]` — center gets the
+  gentlest (densest), left the middle, right the heaviest — so `% held` reads center > left > right.
 - The red thread takes the single longest frontier chain from each panel and joins them across
-  the gutters into one continuous line — the `% held` in the signature (`L C R`) quantifies the
-  progression.
+  the gutters into one continuous line — the `% held` in the signature (`L C R`) quantifies each
+  panel's surviving ground.
 
 ## Exports
 

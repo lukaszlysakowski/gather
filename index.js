@@ -417,12 +417,17 @@ function buildRender() {
 }
 
 // --- pipeline hooks (filled by later tasks) ---
+// Panel placement: which triad level (0=gentlest/densest .. 2=heaviest/most-eroded) each
+// panel gets. The dominant CENTER panel holds the densest render (gentlest erosion); the
+// wings flank it — LEFT medium, RIGHT heaviest. So held reads center > left > right.
+const PANEL_AG_ORDER = [1, 0, 2]; // [left, center, right] -> triad index
+
 function runPanels() {
     const triad = PROGRESSIONS[CONTROL_DEFS.find(d => d.key === 'progression').opts[ui.progression]];
     state.panels = [];
     state.held = [0, 0, 0];
     for (let i = 0; i < 3; i++) {
-        state.activeAg = triad[i];
+        state.activeAg = triad[PANEL_AG_ORDER[i]];
         runWaves();       // reads state.field (shared) + state.activeAg; fills state.D/E, state.paths
         buildRender();    // fills state.segments, state.frontier, state.heldFrac (field coords)
         // capture this panel's outputs (the scratch fields are overwritten by the next run)

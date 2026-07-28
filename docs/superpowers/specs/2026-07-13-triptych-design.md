@@ -27,8 +27,13 @@ travels, the war intensifying along one unbroken line. All other frontier fragme
 discarded — one red, one meaning, one thread.
 
 Decisions made during brainstorming (user-approved):
-- **The variation:** time — the erosion progression (untouched → contested → overrun), same
-  seed, same shared field.
+- **The variation:** three erosion moments of one shared field (same seed) — the three triad
+  levels. **Placement (updated):** the dominant CENTER panel carries the densest, most-intact
+  render (gentlest erosion); the wings flank it, LEFT medium and RIGHT heaviest — the mass reads
+  centered, an intact core between two states of ruin (classical/icon framing). Held reads
+  `center > left > right`. (Originally the three were placed left→right untouched→overrun as a
+  time-lapse; the reorder keeps the same three levels but anchors the densest one in the big
+  center panel — see `PANEL_AG_ORDER = [1,0,2]` in `runPanels`.)
 - **Proportions:** center-dominant classical (center square `Sc`, wings `Sw ≈ Sc/1.5`, wings
   vertically centered).
 - **Interaction:** full maker — reroll the shared seed, all three panels regenerate together.
@@ -91,10 +96,12 @@ All splats and hunt use the passed `ag`. Nothing else in the engine changes.
   - Early → `[0.12, 0.90, 1.80]`
   - Rising (default) → `[0.22, 1.20, 2.60]`
   - Late → `[0.38, 1.55, 3.40]`
-  Measured held% (Low count / Light settle): resistant seed ≈ 98/76/50 (Early) → 95/55/30 (Late);
-  erodible seed ≈ 99/76/49 (Early) → 97/54/24 (Late). Every preset keeps `held[L] > held[C] >
-  held[R]` with wide margins (no ties — the strict-monotone invariant holds).
-- For each panel `i` in {L, C, R}: reset grids, `runWaves(ag[i])`, `buildRender()`, and capture
+  The three levels are placed into panels via `PANEL_AG_ORDER = [1, 0, 2]` (left←mid, center←
+  gentlest/densest, right←heaviest), so held reads `center > left > right`. Measured held% per
+  panel L/C/R (Low count / Light settle): resistant seed ≈ 76/98/50 (Early) → 55/95/30 (Late);
+  erodible seed ≈ 76/99/49 (Early) → 54/97/24 (Late). Every preset keeps `held[C] > held[L] >
+  held[R]` with wide margins (no ties — the strict placement invariant holds).
+- For each panel `i` in {L, C, R}: reset grids, `runWaves(ag[PANEL_AG_ORDER[i]])`, `buildRender()`, and capture
   `panel[i] = { segments, frontierChains, heldFrac }` in field coords. Depositor Count, Balance,
   Seeding, and Settle are identical across the three; only `ag` differs → the eye reads the same
   ground carved to three depths.
@@ -191,8 +198,9 @@ connection-safe window (use Low count / fewer waves in the heaviest checks, as A
    baseline); larger `ag` → more lost ground (monotone).
 3. Shared field: all three panels use the identical `rollField` output (same potential params);
    the three runs differ only by `ag`.
-4. Progression is real: `held[L] > held[C] > held[R]` (strictly decreasing — more erosion holds
-   less ground), for the default Rising triad and at least one other seed.
+4. Placement is real: `held[C] > held[L] > held[R]` (center densest, then left, then right —
+   more erosion holds less ground, and the gentlest level is placed in the center via
+   `PANEL_AG_ORDER`), for the default Rising triad and at least one other seed.
 5. `panelMap`: maps field corners to panel-rect corners exactly; the three rects are
    non-overlapping and wings are vertically centered on the center midline; all mapped geometry
    lies within its panel rect (± a small overshoot tolerance, as in Attrition).
@@ -225,8 +233,11 @@ this is the heaviest build in the family (3 settles per regenerate) and the sess
   controller as a detached background command rather than inside a subagent.
 - **Anti-overfit (binding):** transcribe brief code verbatim; if a test fails, report
   DONE_WITH_CONCERNS with measurements — never change production code or test thresholds/probes to
-  force a pass, and NEVER flip an assertion direction. Any test asserting an erosion/progression
-  direction (e.g. held decreases L→R) is physically required.
+  force a pass, and NEVER flip an assertion direction to make a red test green. Any test asserting
+  an erosion direction (more `ag` → less held) is physically required. NOTE: the panel *placement*
+  invariant (`held[C] > held[L] > held[R]`) was deliberately changed once, as a user-approved
+  design edit reordering which erosion level sits in which panel (`PANEL_AG_ORDER`) — that is a
+  design change with its own approval, not overfitting a failing test.
 - **Final review:** fresh independent subagent (most capable model), zero deference; run fast
   harnesses in full and slow ones via targeted probes.
 
