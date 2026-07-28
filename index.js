@@ -434,7 +434,33 @@ function runPanels() {
         state.held[i] = state.heldFrac;
     }
 }
-function buildThread() {}
+function chainLength(chain) {
+    let L = 0;
+    for (let i = 1; i < chain.length; i++) L += Math.hypot(chain[i].x - chain[i - 1].x, chain[i].y - chain[i - 1].y);
+    return L;
+}
+
+function orientLR(chain) {
+    if (chain.length >= 2 && chain[chain.length - 1].x < chain[0].x) return chain.slice().reverse();
+    return chain;
+}
+
+function buildThread() {
+    const parts = [];
+    for (let i = 0; i < 3; i++) {
+        const chains = state.panels[i] ? state.panels[i].frontier : [];
+        if (!chains.length) continue;
+        // dominant chain = longest by summed length
+        let best = chains[0], bestLen = chainLength(chains[0]);
+        for (const c of chains) { const l = chainLength(c); if (l > bestLen) { bestLen = l; best = c; } }
+        const mapped = orientLR(best).map(p => panelMap(p, PANELS[i]));
+        parts.push(mapped);
+    }
+    // concatenate the present panels' chains into ONE polyline; the join between consecutive
+    // parts is a straight connector across the gutter (implicit in the concatenation).
+    state.thread = [];
+    for (const part of parts) for (const p of part) state.thread.push(p);
+}
 
 function regenerate(newSeed) {
     if (newSeed) state.masterSeed = Math.floor(Math.random() * 1e9);
