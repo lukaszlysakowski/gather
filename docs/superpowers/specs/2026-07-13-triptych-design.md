@@ -51,6 +51,11 @@ Decisions made during brainstorming (user-approved):
   - Panel rects (x, y, size): LEFT `(P, P + (SC−SW)/2, SW)` = `(95, 345, 1000)`;
     CENTER `(P + SW + G, P, SC)` = `(1165, 95, 1500)`;
     RIGHT `(P + SW + G + SC + G, P + (SC−SW)/2, SW)` = `(2735, 345, 1000)`.
+  - The RIGHT panel is **horizontally mirrored** (`flip: true` on its rect; `panelMap` maps
+    `u → 1−u` for it) so the two wings face inward toward the center — a symmetric, icon-like
+    framing. Both the ink streaks and the red thread route through `panelMap`, so they mirror
+    together and stay registered; the thread is oriented left→right in SCREEN space (after the
+    flip) so it still reads continuously across the gutters.
 - Paper `#F7E6D4`, ink `#1A1613`, red `#A93B2A` (the thread is the ONLY red).
 - Each panel: a thin ink border rectangle at its rect (the three frames).
 - Signature bottom-left inside the outer pad:

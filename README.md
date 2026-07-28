@@ -41,6 +41,8 @@ per panel in the browser. Lower Settle, or expect the wait at higher Count.
   panels are mapped into a center-dominant three-square layout.
 - The three erosion levels are placed into panels via `PANEL_AG_ORDER = [1,0,2]` — center gets the
   gentlest (densest), left the middle, right the heaviest — so `% held` reads center > left > right.
+- The right panel is horizontally mirrored (`flip: true`) so the two wings face inward toward the
+  center — a symmetric, icon-like framing.
 - The red thread takes the single longest frontier chain from each panel and joins them across
   the gutters into one continuous line — the `% held` in the signature (`L C R`) quantifies each
   panel's surviving ground.

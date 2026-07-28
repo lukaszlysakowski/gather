@@ -12,9 +12,9 @@ const TW = P + SW + G + SC + G + SW + P;   // 3830
 const TH = P + SC + P;                       // 1690
 const WING_Y = P + (SC - SW) / 2;            // 345 — wings vertically centered
 const PANELS = [
-    { x0: P, y0: WING_Y, s: SW },                    // LEFT
-    { x0: P + SW + G, y0: P, s: SC },                // CENTER
-    { x0: P + SW + G + SC + G, y0: WING_Y, s: SW }   // RIGHT
+    { x0: P, y0: WING_Y, s: SW },                            // LEFT
+    { x0: P + SW + G, y0: P, s: SC },                        // CENTER
+    { x0: P + SW + G + SC + G, y0: WING_Y, s: SW, flip: true } // RIGHT (horizontally mirrored)
 ];
 
 const PAPER = '#F7E6D4';
@@ -458,8 +458,11 @@ function buildThread() {
         // dominant chain = longest by summed length
         let best = chains[0], bestLen = chainLength(chains[0]);
         for (const c of chains) { const l = chainLength(c); if (l > bestLen) { bestLen = l; best = c; } }
-        const mapped = orientLR(best).map(p => panelMap(p, PANELS[i]));
-        parts.push(mapped);
+        // Map into the panel rect FIRST (this applies any per-panel flip), then orient the
+        // mapped polyline left→right in SCREEN space — so the thread stays continuous across the
+        // gutters even when a panel is horizontally flipped.
+        const mapped = best.map(p => panelMap(p, PANELS[i]));
+        parts.push(orientLR(mapped));
     }
     // concatenate the present panels' chains into ONE polyline; the join between consecutive
     // parts is a straight connector across the gutter (implicit in the concatenation).
@@ -503,7 +506,9 @@ function drawPoly(pts) {
 // map a field-space point into a panel rect (uniform square scale)
 function panelMap(pt, rect) {
     const span = FS - 2 * FPAD;
-    const u = (pt.x - FPAD) / span, v = (pt.y - FPAD) / span;
+    let u = (pt.x - FPAD) / span;
+    const v = (pt.y - FPAD) / span;
+    if (rect.flip) u = 1 - u;   // horizontally mirror this panel's content within its rect
     return { x: rect.x0 + u * rect.s, y: rect.y0 + v * rect.s };
 }
 
