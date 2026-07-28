@@ -47,9 +47,11 @@ per panel in the browser. Lower Settle, or expect the wait at higher Count.
   gentlest (densest), left the middle, right the heaviest — so `% held` reads center > left > right.
 - The right panel is horizontally mirrored (`flip: true`) so the two wings face inward toward the
   center — a symmetric, icon-like framing.
-- The red thread takes the single longest frontier chain from each panel and joins them across
-  the gutters into one continuous line — the `% held` in the signature (`L C R`) quantifies each
-  panel's surviving ground.
+- The red thread joins each panel's frontier chains into one continuous line across the gutters.
+  The wings each contribute their single longest chain (they hold plenty of contested frontier);
+  the dense CENTER holds very little frontier (it is barely eroded), so it stitches its several
+  longest chains together — ordered left→right — so the thread still travels through the center.
+  The `% held` in the signature (`L C R`) quantifies each panel's surviving ground.
 
 ## Exports
 

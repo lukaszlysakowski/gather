@@ -450,22 +450,42 @@ function orientLR(chain) {
     return chain;
 }
 
+// How many frontier chains each panel contributes to the red thread. The wings' single dominant
+// chain is already long; the dense CENTER holds very little frontier (it is barely eroded), so it
+// stitches together its several longest chains — ordered left→right — so the thread travels
+// through the center rather than clipping one short arc.
+const THREAD_CHAINS = [1, 5, 1]; // [left, center, right]
+
+// The top-k longest frontier chains a panel contributes to the thread (field-space, unmapped).
+function panelThreadChains(i) {
+    const chains = state.panels[i] ? state.panels[i].frontier : [];
+    if (!chains.length) return [];
+    return chains.slice().sort((a, b) => chainLength(b) - chainLength(a)).slice(0, THREAD_CHAINS[i]);
+}
+
+// Stitch a panel's chains into one polyline, mapped by `mapFn` (global or panel-local). Each chain
+// is oriented left→right in the MAPPED space, then the chains are ordered left→right and joined —
+// so the thread reads continuously and correctly whether or not the panel is flipped.
+function stitchThread(chains, mapFn) {
+    const mapped = chains.map(ch => orientLR(ch.map(mapFn)));
+    mapped.sort((a, b) => a[0].x - b[0].x);
+    const part = [];
+    for (const m of mapped) for (const p of m) part.push(p);
+    return part;
+}
+
+function panelThreadPart(i) {
+    return stitchThread(panelThreadChains(i), p => panelMap(p, PANELS[i]));
+}
+
 function buildThread() {
     const parts = [];
     for (let i = 0; i < 3; i++) {
-        const chains = state.panels[i] ? state.panels[i].frontier : [];
-        if (!chains.length) continue;
-        // dominant chain = longest by summed length
-        let best = chains[0], bestLen = chainLength(chains[0]);
-        for (const c of chains) { const l = chainLength(c); if (l > bestLen) { bestLen = l; best = c; } }
-        // Map into the panel rect FIRST (this applies any per-panel flip), then orient the
-        // mapped polyline left→right in SCREEN space — so the thread stays continuous across the
-        // gutters even when a panel is horizontally flipped.
-        const mapped = best.map(p => panelMap(p, PANELS[i]));
-        parts.push(orientLR(mapped));
+        const part = panelThreadPart(i);
+        if (part.length) parts.push(part);
     }
-    // concatenate the present panels' chains into ONE polyline; the join between consecutive
-    // parts is a straight connector across the gutter (implicit in the concatenation).
+    // concatenate the present panels' parts into ONE polyline; the join between consecutive parts
+    // (and between the center's stitched chains) is a straight connector — the thread stays single.
     state.thread = [];
     for (const part of parts) for (const p of part) state.thread.push(p);
 }
@@ -644,15 +664,6 @@ function exportSVG() {
     URL.revokeObjectURL(a.href);
 }
 
-// the dominant (longest) frontier chain of a panel — the panel's slice of the red thread
-function dominantChain(i) {
-    const chains = state.panels[i] ? state.panels[i].frontier : [];
-    if (!chains.length) return [];
-    let best = chains[0], bestLen = chainLength(chains[0]);
-    for (const c of chains) { const l = chainLength(c); if (l > bestLen) { bestLen = l; best = c; } }
-    return best;
-}
-
 // One panel as a standalone SVG in LOCAL coords (origin at the panel's top-left, size s×s).
 // Uses panelMap (so any per-panel flip carries through) then shifts into the panel's own frame.
 const PANEL_NAMES = ['left', 'center', 'right'];
@@ -664,8 +675,8 @@ function buildPanelSVG(i) {
         const d = polyToPath(seg.pts.map(local));
         (seg.cls === 1 ? heavy : light).push(d);
     }
-    const chain = dominantChain(i);
-    const threadPaths = chain.length >= 2 ? [polyToPath(orientLR(chain.map(local)))] : [];
+    const thread = stitchThread(panelThreadChains(i), local); // same chains as the composite
+    const threadPaths = thread.length >= 2 ? [polyToPath(thread)] : [];
     const borderPaths = [`M 0 0 L ${s} 0 L ${s} ${s} L 0 ${s} L 0 0`];
     const held = Math.round(100 * state.held[i]);
     let out = '<?xml version="1.0" encoding="UTF-8"?>\n' +

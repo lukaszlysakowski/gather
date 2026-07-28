@@ -17,14 +17,15 @@ by its own border. Landscape format. Reads as corroded metal / moth-eaten cloth 
 river-history map, told in three states.
 
 **The one red — "the war is one war."** Each panel has its own frontier (its C=0 truce line),
-but Triptych draws only the single **dominant frontier chain** in each panel and stitches the
-three across the gutters with red connectors into ONE continuous red thread: it enters the
-left panel, crosses into the center, crosses into the right, and exits. Genuinely one red line
-on the whole page — every segment a real frontier from its own panel, joined into a single
-mark. Because erosion grows left→right, the thread starts short and simple in the untouched
-wing and becomes long and tortured by the overrun wing: the red visibly degrades as it
-travels, the war intensifying along one unbroken line. All other frontier fragments are
-discarded — one red, one meaning, one thread.
+and Triptych stitches these across the gutters with red connectors into ONE continuous red
+thread: it enters the left panel, crosses into the center, crosses into the right, and exits.
+Genuinely one red line on the whole page — every segment a real frontier from its own panel,
+joined into a single mark. Each panel contributes its longest frontier chains via
+`THREAD_CHAINS = [1, 5, 1]` (`panelThreadChains` → `stitchThread`): the wings hold plenty of
+contested frontier, so their single dominant chain suffices; the dense CENTER (barely eroded,
+so it holds very little frontier) stitches its **five** longest chains — ordered left→right —
+so the thread still travels through the center rather than clipping one short arc. All other
+frontier fragments are discarded — one red, one meaning, one thread.
 
 Decisions made during brainstorming (user-approved):
 - **The variation:** three erosion moments of one shared field (same seed) — the three triad
