@@ -532,10 +532,14 @@ function panelMap(pt, rect) {
     return { x: rect.x0 + u * rect.s, y: rect.y0 + v * rect.s };
 }
 
-function signatureText() {
+function dateStamp() {
     const d = new Date();
     const p2 = n => String(n).padStart(2, '0');
-    return `Gather · seed ${state.masterSeed} · ${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}`;
+    return `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}`;
+}
+
+function signatureText() {
+    return `Gather · seed ${state.masterSeed} · ${dateStamp()}`;
 }
 
 function renderAll() {
@@ -677,7 +681,6 @@ function buildPanelSVG(i) {
     const thread = stitchThread(panelThreadChains(i), local); // same chains as the composite
     const threadPaths = thread.length >= 2 ? [polyToPath(thread)] : [];
     const borderPaths = [`M 0 0 L ${s} 0 L ${s} ${s} L 0 ${s} L 0 0`];
-    const held = Math.round(100 * state.held[i]);
     let out = '<?xml version="1.0" encoding="UTF-8"?>\n' +
         `<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" ` +
         `width="${s}" height="${s}" viewBox="0 0 ${s} ${s}">\n`;
@@ -688,7 +691,7 @@ function buildPanelSVG(i) {
     out += svgPass('Thread', RED, 1.7, threadPaths);
     out += `  <g id="Signature" inkscape:groupmode="layer" inkscape:label="Signature">\n` +
         `    <text x="24" y="${s - 24}" font-family="monospace" font-size="24" fill="${INK}">` +
-        `Gather · seed ${state.masterSeed} · ${PANEL_NAMES[i]} · ${held}% held</text>\n  </g>\n`;
+        `Gather · seed ${state.masterSeed} · ${PANEL_NAMES[i]} · ${dateStamp()}</text>\n  </g>\n`;
     out += '</svg>\n';
     return out;
 }
@@ -743,7 +746,7 @@ function drawPanelTo(pg, i) {
     pg.fill(INK);
     pg.textSize(24);
     pg.textAlign(LEFT, BASELINE);
-    pg.text(`Gather · seed ${state.masterSeed} · ${PANEL_NAMES[i]} · ${Math.round(100 * state.held[i])}% held`, 24, s - 24);
+    pg.text(`Gather · seed ${state.masterSeed} · ${PANEL_NAMES[i]} · ${dateStamp()}`, 24, s - 24);
     pg.noFill();
 }
 

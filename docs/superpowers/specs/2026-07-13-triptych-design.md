@@ -60,8 +60,8 @@ Decisions made during brainstorming (user-approved):
 - Paper `#F7E6D4`, ink `#1A1613`, red `#A93B2A` (the thread is the ONLY red).
 - Each panel: a thin ink border rectangle at its rect (the three frames).
 - Signature bottom-left inside the outer pad:
-  `Gather · seed N · YYYY-MM-DD` — bottom-RIGHT, right-aligned. (Title, seed, date only; the
-  per-panel `% held` still labels each standalone per-panel export.)
+  `Gather · seed N · YYYY-MM-DD` — bottom-RIGHT, right-aligned. Title, seed, date only (no held
+  variables, no time). Per-panel exports use `Gather · seed N · <panel> · YYYY-MM-DD`.
 - House idiom: single `index.html` + `index.js`, vendored `p5.min.js`, no build step.
 - Sidebar CSS copied from Attrition/Drift (a11y floor: `--muted #969082`,
   `.ctrl min-height 24px`; Lighthouse a11y 100 — never regress). Container div id

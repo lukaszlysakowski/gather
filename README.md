@@ -52,8 +52,8 @@ per panel in the browser. Lower Settle, or expect the wait at higher Count.
   The wings each contribute their single longest chain (they hold plenty of contested frontier);
   the dense CENTER holds very little frontier (it is barely eroded), so it stitches its several
   longest chains together — ordered left→right — so the thread still travels through the center.
-  The composite signature (bottom-right) is just `Gather · seed N · date`; each per-panel export
-  carries its own `% held` label.
+  The composite signature (bottom-right) is `Gather · seed N · date`; per-panel exports use
+  `Gather · seed N · <panel> · date`. (Held % is no longer printed on the art.)
 
 ## Exports
 
