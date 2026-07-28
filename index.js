@@ -590,7 +590,8 @@ function setupControls() {
     document.getElementById('btn-refresh').addEventListener('click', () => regenerate(true));
     document.getElementById('btn-svg').addEventListener('click', () => exportSVG());
     document.getElementById('btn-png').addEventListener('click', () => exportPNG(1));
-    document.getElementById('btn-png4').addEventListener('click', () => exportPNG(4));
+    document.getElementById('btn-png5').addEventListener('click', () => exportPNG(5));
+    document.getElementById('btn-svg-panels').addEventListener('click', () => exportPanelSVGs());
 }
 
 function polyToPath(pts) {
@@ -641,6 +642,56 @@ function exportSVG() {
     a.download = `triptych-seed${state.masterSeed}.svg`;
     a.click();
     URL.revokeObjectURL(a.href);
+}
+
+// the dominant (longest) frontier chain of a panel — the panel's slice of the red thread
+function dominantChain(i) {
+    const chains = state.panels[i] ? state.panels[i].frontier : [];
+    if (!chains.length) return [];
+    let best = chains[0], bestLen = chainLength(chains[0]);
+    for (const c of chains) { const l = chainLength(c); if (l > bestLen) { bestLen = l; best = c; } }
+    return best;
+}
+
+// One panel as a standalone SVG in LOCAL coords (origin at the panel's top-left, size s×s).
+// Uses panelMap (so any per-panel flip carries through) then shifts into the panel's own frame.
+const PANEL_NAMES = ['left', 'center', 'right'];
+function buildPanelSVG(i) {
+    const rect = PANELS[i], s = rect.s;
+    const local = pt => { const q = panelMap(pt, rect); return { x: q.x - rect.x0, y: q.y - rect.y0 }; };
+    const light = [], heavy = [];
+    for (const seg of state.panels[i].segments) {
+        const d = polyToPath(seg.pts.map(local));
+        (seg.cls === 1 ? heavy : light).push(d);
+    }
+    const chain = dominantChain(i);
+    const threadPaths = chain.length >= 2 ? [polyToPath(orientLR(chain.map(local)))] : [];
+    const borderPaths = [`M 0 0 L ${s} 0 L ${s} ${s} L 0 ${s} L 0 0`];
+    const held = Math.round(100 * state.held[i]);
+    let out = '<?xml version="1.0" encoding="UTF-8"?>\n' +
+        `<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" ` +
+        `width="${s}" height="${s}" viewBox="0 0 ${s} ${s}">\n`;
+    out += `  <rect width="${s}" height="${s}" fill="${PAPER}"/>\n`;
+    out += svgPass('Border', INK, 0.9, borderPaths);
+    out += svgPass('Streaks-light', INK, 0.4, light);
+    out += svgPass('Streaks-heavy', INK, 0.8, heavy);
+    out += svgPass('Thread', RED, 1.7, threadPaths);
+    out += `  <g id="Signature" inkscape:groupmode="layer" inkscape:label="Signature">\n` +
+        `    <text x="24" y="${s - 24}" font-family="monospace" font-size="24" fill="${INK}">` +
+        `Triptych · seed ${state.masterSeed} · ${PANEL_NAMES[i]} · ${held}% held</text>\n  </g>\n`;
+    out += '</svg>\n';
+    return out;
+}
+
+function exportPanelSVGs() {
+    for (let i = 0; i < 3; i++) {
+        const blob = new Blob([buildPanelSVG(i)], { type: 'image/svg+xml' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `triptych-seed${state.masterSeed}-${PANEL_NAMES[i]}.svg`;
+        a.click();
+        URL.revokeObjectURL(a.href);
+    }
 }
 
 function exportPNG(scale) {
