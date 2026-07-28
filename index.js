@@ -583,8 +583,63 @@ function setupControls() {
     document.getElementById('btn-png4').addEventListener('click', () => exportPNG(4));
 }
 
-function exportSVG() {}
-function exportPNG(scale) {}
+function polyToPath(pts) {
+    const w = wobblePts(pts);
+    let d = `M ${w[0].x.toFixed(2)} ${w[0].y.toFixed(2)}`;
+    for (let i = 1; i < w.length; i++) d += ` L ${w[i].x.toFixed(2)} ${w[i].y.toFixed(2)}`;
+    return d;
+}
+
+function svgPass(label, color, weight, paths) {
+    if (!paths.length) return '';
+    let s = `  <g id="${label}" inkscape:groupmode="layer" inkscape:label="${label}" ` +
+        `stroke="${color}" stroke-width="${weight}" fill="none" stroke-linecap="round" stroke-linejoin="round">\n`;
+    for (const d of paths) s += `    <path d="${d}"/>\n`;
+    s += '  </g>\n';
+    return s;
+}
+
+function buildSVG() {
+    const light = [], heavy = [];
+    for (let i = 0; i < 3; i++) {
+        const rect = PANELS[i];
+        for (const s of state.panels[i].segments) {
+            const d = polyToPath(s.pts.map(p => panelMap(p, rect)));
+            (s.cls === 1 ? heavy : light).push(d);
+        }
+    }
+    const threadPaths = state.thread.length >= 2 ? [polyToPath(state.thread)] : [];
+    const borderPaths = PANELS.map(r => `M ${r.x0} ${r.y0} L ${r.x0 + r.s} ${r.y0} L ${r.x0 + r.s} ${r.y0 + r.s} L ${r.x0} ${r.y0 + r.s} L ${r.x0} ${r.y0}`);
+    let s = '<?xml version="1.0" encoding="UTF-8"?>\n' +
+        `<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" ` +
+        `width="${TW}" height="${TH}" viewBox="0 0 ${TW} ${TH}">\n`;
+    s += `  <rect width="${TW}" height="${TH}" fill="${PAPER}"/>\n`;
+    s += svgPass('Borders', INK, 0.9, borderPaths);
+    s += svgPass('Streaks-light', INK, 0.4, light);
+    s += svgPass('Streaks-heavy', INK, 0.8, heavy);
+    s += svgPass('Thread', RED, 1.7, threadPaths);
+    s += `  <g id="Signature" inkscape:groupmode="layer" inkscape:label="Signature">\n` +
+        `    <text x="${P}" y="${TH - P + 40}" font-family="monospace" font-size="24" fill="${INK}">${signatureText()}</text>\n  </g>\n`;
+    s += '</svg>\n';
+    return s;
+}
+
+function exportSVG() {
+    const blob = new Blob([buildSVG()], { type: 'image/svg+xml' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `triptych-seed${state.masterSeed}.svg`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+}
+
+function exportPNG(scale) {
+    pixelDensity(scale);
+    renderAll();
+    saveCanvas(`triptych-seed${state.masterSeed}-${scale}x`, 'png');
+    pixelDensity(1);
+    renderAll();
+}
 
 function setup() {
     const c = createCanvas(TW, TH);
