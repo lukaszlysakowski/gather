@@ -36,10 +36,13 @@ const CONTROL_DEFS = [
     { key: 'seeding',     label: 'Seeding',     opts: ['Scattered', 'Edge', 'Clustered'],          def: 0 },
     { key: 'progression', label: 'Progression', opts: ['Early', 'Rising', 'Late'],                 def: 1 },
     { key: 'settle',      label: 'Settle',      opts: ['Off', 'Light', 'Full'],                    def: 1 },
-    { key: 'wobble',      label: 'Wobble',      opts: ['Off', 'On'],                               def: 0 }
+    { key: 'wobble',      label: 'Wobble',      opts: ['Off', 'On'],                               def: 0, display: true },
+    { key: 'borders',     label: 'Borders',     opts: ['On', 'Off'],                               def: 0, display: true }
 ];
 
-const ui = { scale: 1, strength: 1, count: 0, balance: 1, seeding: 0, progression: 1, settle: 1, wobble: 0 };
+// `display: true` controls only affect rendering — toggling them re-draws (renderAll) instead of
+// re-running the simulation, and they are left out of randomize.
+const ui = { scale: 1, strength: 1, count: 0, balance: 1, seeding: 0, progression: 1, settle: 1, wobble: 0, borders: 0 };
 
 const state = {
     masterSeed: 1,
@@ -560,11 +563,13 @@ function renderAll() {
         strokeWeight(3.2);
         drawPoly(state.thread);
     }
-    // three panel borders
-    stroke(INK);
-    strokeWeight(2.0);
-    noFill();
-    for (const r of PANELS) rect(r.x0, r.y0, r.s, r.s);
+    // three panel borders (ui.borders: 0 = On, 1 = Off)
+    if (ui.borders === 0) {
+        stroke(INK);
+        strokeWeight(2.0);
+        noFill();
+        for (const r of PANELS) rect(r.x0, r.y0, r.s, r.s);
+    }
     // signature
     noStroke();
     fill(INK);
@@ -580,7 +585,7 @@ function syncControlButtons() {
 
 function randomizeAll() {
     for (const def of CONTROL_DEFS) {
-        if (def.key === 'wobble') continue;
+        if (def.display) continue;
         ui[def.key] = Math.floor(Math.random() * def.opts.length);
     }
     syncControlButtons();
@@ -601,7 +606,7 @@ function setupControls() {
         btn.addEventListener('click', () => {
             ui[def.key] = (ui[def.key] + 1) % def.opts.length;
             btn.textContent = def.opts[ui[def.key]];
-            regenerate(false);
+            if (def.display) renderAll(); else regenerate(false);
         });
         ctrlButtons[def.key] = btn;
         row.appendChild(lab);
@@ -648,7 +653,7 @@ function buildSVG() {
         `<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" ` +
         `width="${TW}" height="${TH}" viewBox="0 0 ${TW} ${TH}">\n`;
     s += `  <rect width="${TW}" height="${TH}" fill="${PAPER}"/>\n`;
-    s += svgPass('Borders', INK, 0.9, borderPaths);
+    s += svgPass('Borders', INK, 0.9, ui.borders === 0 ? borderPaths : []);
     s += svgPass('Streaks-light', INK, 0.4, light);
     s += svgPass('Streaks-heavy', INK, 0.8, heavy);
     s += svgPass('Thread', RED, 1.7, threadPaths);
@@ -685,7 +690,7 @@ function buildPanelSVG(i) {
         `<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" ` +
         `width="${s}" height="${s}" viewBox="0 0 ${s} ${s}">\n`;
     out += `  <rect width="${s}" height="${s}" fill="${PAPER}"/>\n`;
-    out += svgPass('Border', INK, 0.9, borderPaths);
+    out += svgPass('Border', INK, 0.9, ui.borders === 0 ? borderPaths : []);
     out += svgPass('Streaks-light', INK, 0.4, light);
     out += svgPass('Streaks-heavy', INK, 0.8, heavy);
     out += svgPass('Thread', RED, 1.7, threadPaths);
@@ -738,10 +743,12 @@ function drawPanelTo(pg, i) {
     for (const seg of state.panels[i].segments) if (seg.cls === 1) drawPolyTo(pg, seg.pts.map(local));
     const thread = stitchThread(panelThreadChains(i), local);
     if (thread.length >= 2) { pg.stroke(RED); pg.strokeWeight(3.2); drawPolyTo(pg, thread); }
-    pg.stroke(INK);
-    pg.strokeWeight(2.0);
-    pg.noFill();
-    pg.rect(0, 0, s, s);
+    if (ui.borders === 0) {
+        pg.stroke(INK);
+        pg.strokeWeight(2.0);
+        pg.noFill();
+        pg.rect(0, 0, s, s);
+    }
     pg.noStroke();
     pg.fill(INK);
     pg.textSize(24);

@@ -179,7 +179,9 @@ Family sidebar (cycleCtrl / CONTROL_DEFS / setupControls / randomizeAll):
   Seeding (Scattered/Edge/Clustered) — identical across all three panels.
 - **Progression:** Early / Rising / Late (the erosion triad, default Rising).
 - **Settle:** Off/Light/Full (default Light).
-- **Style:** Wobble (On/Off, default Off).
+- **Style:** Wobble (On/Off, default Off) · Borders (On/Off, default On). Both are display-only
+  toggles (`display: true`): they re-draw via `renderAll` instead of re-running the simulation,
+  and are skipped by randomize. Borders Off suppresses the panel frames on canvas + all exports.
 - Buttons: randomize / refresh / svg / png / png 4x.
 - Click canvas = new seed, same params. Randomize = reroll aesthetic controls + new seed
   (Wobble left as set). Refresh = new seed, same params.

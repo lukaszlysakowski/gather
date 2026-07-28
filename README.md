@@ -30,7 +30,9 @@ per panel in the browser. Lower Settle, or expect the wait at higher Count.
 - **Progression** — Early / Rising / Late (the erosion triad: how far the three levels span; the
   gentlest is always placed in the center, so a wider span = more ruined wings)
 - **Settle** — Off/Light/Full
-- **Style** — Wobble (default Off)
+- **Style** — Wobble · Borders (default On) — display-only toggles; they re-draw instantly
+  (no re-simulation) and are excluded from randomize. Borders Off hides the three panel frames
+  on the canvas and in every export (composite + per-panel).
 - randomize / refresh · click canvas = new seed
 - **Exports:** `svg` (full composite), `png` (1×), `png 5x` (high-res raster), plus per-panel
   exports — `svg · per panel` and `png · per panel` (5×) — each writing three standalone files
