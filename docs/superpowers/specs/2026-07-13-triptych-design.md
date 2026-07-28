@@ -1,8 +1,8 @@
-# Triptych — Design Spec (2026-07-13)
+# Gather — Design Spec (2026-07-13)
 
 ## Concept
 
-**Triptych — one contested ground, three moments.** The family's first multi-panel piece.
+**Gather — one contested ground, three moments.** The family's first multi-panel piece.
 A single Attrition field (one shared seed) is rendered three times across the panels as the
 same battle unfolding in time — LEFT the ground barely touched (light erosion), CENTER the
 contest at its height (the theme), RIGHT the ground overrun (fierce erosion). Read left to
@@ -17,7 +17,7 @@ by its own border. Landscape format. Reads as corroded metal / moth-eaten cloth 
 river-history map, told in three states.
 
 **The one red — "the war is one war."** Each panel has its own frontier (its C=0 truce line),
-and Triptych stitches these across the gutters with red connectors into ONE continuous red
+and Gather stitches these across the gutters with red connectors into ONE continuous red
 thread: it enters the left panel, crosses into the center, crosses into the right, and exits.
 Genuinely one red line on the whole page — every segment a real frontier from its own panel,
 joined into a single mark. Each panel contributes its longest frontier chains via
@@ -40,7 +40,7 @@ Decisions made during brainstorming (user-approved):
 - **Interaction:** full maker — reroll the shared seed, all three panels regenerate together.
 - **The red:** one continuous red thread spanning all three panels (each panel's dominant
   frontier chain, joined across the gutters).
-- **Name:** Triptych.
+- **Name:** Gather (formerly Triptych).
 - **Scope:** full family maker, local git repo first; GitHub publish only when asked.
 
 ## Page & livery
@@ -60,7 +60,7 @@ Decisions made during brainstorming (user-approved):
 - Paper `#F7E6D4`, ink `#1A1613`, red `#A93B2A` (the thread is the ONLY red).
 - Each panel: a thin ink border rectangle at its rect (the three frames).
 - Signature bottom-left inside the outer pad:
-  `Triptych · seed N · <L> <C> <R>% held  YYYY-MM-DD HH:MM`
+  `Gather · seed N · <L> <C> <R>% held  YYYY-MM-DD HH:MM`
   (L/C/R = round(100 × heldFrac) for the three panels — the progression quantified).
 - House idiom: single `index.html` + `index.js`, vendored `p5.min.js`, no build step.
 - Sidebar CSS copied from Attrition/Drift (a11y floor: `--muted #969082`,
@@ -71,7 +71,7 @@ Decisions made during brainstorming (user-approved):
 
 The Attrition engine is ported verbatim and runs in its native field-coordinate space
 `FS = 2170`, `FPAD = round(FS·0.04) = 87`, field region `[FPAD, FS−FPAD]²`, deposition grids
-`GRID_N = 300`. Triptych's novelty is the meta-composition over it.
+`GRID_N = 300`. Gather's novelty is the meta-composition over it.
 
 ### Ported Attrition pipeline (verbatim, per panel)
 
@@ -147,7 +147,7 @@ square (uniform scale) → no flow distortion. Rects do not overlap (gutters gua
 three panel runs differ only by `ag`, each fully deterministic (Attrition's per-wave/per-species
 seeded RNG — depositors `masterSeed + w·9161`, eroders `masterSeed + w·7331` — carries over,
 identical across panels except where `ag` changes the eroder dynamics). Same seed → identical
-triptych, thread included.
+composition, thread included.
 
 ## Rendering & export
 
@@ -185,7 +185,7 @@ Family sidebar (cycleCtrl / CONTROL_DEFS / setupControls / randomizeAll):
   (Wobble left as set). Refresh = new seed, same params.
 - No rating/learning system.
 - **Performance:** each regenerate runs THREE full Attrition settles (~3× a single panel).
-  Defaults stay modest (Count Low, Settle Light). The browser handles a default triptych in a
+  Defaults stay modest (Count Low, Settle Light). The browser handles a default render in a
   handful of seconds per panel; Full settle at higher Count is the heavy end.
 
 ## Testing

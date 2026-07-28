@@ -1,4 +1,4 @@
-# Triptych
+# Gather
 
 One contested ground, three moments. A single [Attrition](https://github.com/lukaszlysakowski/attrition)
 field — the same seed, the same shared curl terrain — rendered three times at three erosion
@@ -20,7 +20,7 @@ Static files, no build step: serve the directory (`npx serve . --listen 3466`) a
 ## Performance
 
 Each render runs **three** full Attrition two-species settles (one per panel), so it is the
-heaviest piece in the family — a default triptych (Count Low, Settle Light) takes several seconds
+heaviest piece in the family — a default render (Count Low, Settle Light) takes several seconds
 per panel in the browser. Lower Settle, or expect the wait at higher Count.
 
 ## Controls

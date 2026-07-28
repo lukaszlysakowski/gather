@@ -1,4 +1,4 @@
-// Triptych — one contested ground, three moments. A meta-composition over Attrition.
+// Gather — one contested ground, three moments. A meta-composition over Attrition.
 // Family: palimpsest / core-samples / second-reading / fold / watershed / interference / drift / attrition.
 
 // --- field-coordinate space (Attrition's native, per panel) ---
@@ -6,7 +6,7 @@ const FS = 2170;
 const FPAD = Math.round(FS * 0.04);
 const GRID_N = 300;
 
-// --- triptych layout ---
+// --- gather layout ---
 const SC = 1500, SW = 1000, G = 70, P = 95;
 const TW = P + SW + G + SC + G + SW + P;   // 3830
 const TH = P + SC + P;                       // 1690
@@ -49,7 +49,7 @@ const state = {
     segments: [], frontier: [], heldFrac: 0, // per-panel scratch outputs (Attrition buildRender)
     panels: [],           // [{segments, frontier, heldFrac}] x3, field coords
     held: [0, 0, 0],      // heldFrac per panel
-    thread: []            // ONE red polyline in triptych coords
+    thread: []            // ONE red polyline in page coords
 };
 
 const ctrlButtons = {};
@@ -536,7 +536,7 @@ function signatureText() {
     const d = new Date();
     const p2 = n => String(n).padStart(2, '0');
     const h = state.held.map(f => Math.round(100 * f));
-    return `Triptych · seed ${state.masterSeed} · ${h[0]} ${h[1]} ${h[2]}% held  ` +
+    return `Gather · seed ${state.masterSeed} · ${h[0]} ${h[1]} ${h[2]}% held  ` +
         `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())} ${p2(d.getHours())}:${p2(d.getMinutes())}`;
 }
 
@@ -552,7 +552,7 @@ function renderAll() {
         strokeWeight(1.4);
         for (const s of segs) if (s.cls === 1) drawPoly(s.pts.map(pt => panelMap(pt, rect)));
     }
-    // the one red thread (already in triptych coords)
+    // the one red thread (already in page coords)
     if (state.thread.length >= 2) {
         stroke(RED);
         strokeWeight(3.2);
@@ -660,7 +660,7 @@ function exportSVG() {
     const blob = new Blob([buildSVG()], { type: 'image/svg+xml' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `triptych-seed${state.masterSeed}.svg`;
+    a.download = `gather-seed${state.masterSeed}.svg`;
     a.click();
     URL.revokeObjectURL(a.href);
 }
@@ -690,7 +690,7 @@ function buildPanelSVG(i) {
     out += svgPass('Thread', RED, 1.7, threadPaths);
     out += `  <g id="Signature" inkscape:groupmode="layer" inkscape:label="Signature">\n` +
         `    <text x="24" y="${s - 24}" font-family="monospace" font-size="24" fill="${INK}">` +
-        `Triptych · seed ${state.masterSeed} · ${PANEL_NAMES[i]} · ${held}% held</text>\n  </g>\n`;
+        `Gather · seed ${state.masterSeed} · ${PANEL_NAMES[i]} · ${held}% held</text>\n  </g>\n`;
     out += '</svg>\n';
     return out;
 }
@@ -700,7 +700,7 @@ function exportPanelSVGs() {
         const blob = new Blob([buildPanelSVG(i)], { type: 'image/svg+xml' });
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
-        a.download = `triptych-seed${state.masterSeed}-${PANEL_NAMES[i]}.svg`;
+        a.download = `gather-seed${state.masterSeed}-${PANEL_NAMES[i]}.svg`;
         a.click();
         URL.revokeObjectURL(a.href);
     }
@@ -709,7 +709,7 @@ function exportPanelSVGs() {
 function exportPNG(scale) {
     pixelDensity(scale);
     renderAll();
-    saveCanvas(`triptych-seed${state.masterSeed}-${scale}x`, 'png');
+    saveCanvas(`gather-seed${state.masterSeed}-${scale}x`, 'png');
     pixelDensity(1);
     renderAll();
 }
@@ -745,7 +745,7 @@ function drawPanelTo(pg, i) {
     pg.fill(INK);
     pg.textSize(24);
     pg.textAlign(LEFT, BASELINE);
-    pg.text(`Triptych · seed ${state.masterSeed} · ${PANEL_NAMES[i]} · ${Math.round(100 * state.held[i])}% held`, 24, s - 24);
+    pg.text(`Gather · seed ${state.masterSeed} · ${PANEL_NAMES[i]} · ${Math.round(100 * state.held[i])}% held`, 24, s - 24);
     pg.noFill();
 }
 
@@ -755,7 +755,7 @@ function exportPanelPNGs(scale) {
         const pg = createGraphics(rect.s, rect.s);
         pg.pixelDensity(scale);
         drawPanelTo(pg, i);
-        saveCanvas(pg, `triptych-seed${state.masterSeed}-${PANEL_NAMES[i]}-${scale}x`, 'png');
+        saveCanvas(pg, `gather-seed${state.masterSeed}-${PANEL_NAMES[i]}-${scale}x`, 'png');
         pg.remove();
     }
 }

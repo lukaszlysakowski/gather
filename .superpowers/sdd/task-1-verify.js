@@ -42,7 +42,7 @@ const corners = vm.runInContext(`
 `, sandbox);
 check('panelMap corners → center rect', Math.abs(corners[0].x - 1165) < 1e-6 && Math.abs(corners[0].y - 95) < 1e-6 && Math.abs(corners[1].x - (1165 + 1500)) < 1e-6, JSON.stringify(corners));
 const sig = vm.runInContext('signatureText()', sandbox);
-check('signature format', /^Triptych · seed 123 · \d+ \d+ \d+% held  \d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(sig), sig);
+check('signature format', /^Gather · seed 123 · \d+ \d+ \d+% held  \d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(sig), sig);
 
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
