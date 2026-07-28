@@ -83,10 +83,17 @@ All splats and hunt use the passed `ag`. Nothing else in the engine changes.
 - `rollField()` runs ONCE from `masterSeed` → the shared curl potential + field params (the
   same terrain for all three panels).
 - **Progression** control selects an `ag` triad `[agL, agC, agR]` (left/center/right), strictly
-  increasing:
-  - Early → `[0.15, 0.35, 0.70]`
-  - Rising (default) → `[0.30, 0.60, 1.00]`
-  - Late → `[0.60, 1.00, 1.40]`
+  increasing. The triads are deliberately wide-span so the three panels read as *distinct erosion
+  moments* (near-pristine left, contested center, overrun right) rather than small variations of
+  one theme — and so even erosion-resistant fields still show a clear three-way split. Left `ag`
+  is very low (near-pristine wing); right `ag` runs well past the settle-to-truce knee (the right
+  wing bottoms out around ~25–35% held on erodible fields, torn into blotchy masses):
+  - Early → `[0.12, 0.90, 1.80]`
+  - Rising (default) → `[0.22, 1.20, 2.60]`
+  - Late → `[0.38, 1.55, 3.40]`
+  Measured held% (Low count / Light settle): resistant seed ≈ 98/76/50 (Early) → 95/55/30 (Late);
+  erodible seed ≈ 99/76/49 (Early) → 97/54/24 (Late). Every preset keeps `held[L] > held[C] >
+  held[R]` with wide margins (no ties — the strict-monotone invariant holds).
 - For each panel `i` in {L, C, R}: reset grids, `runWaves(ag[i])`, `buildRender()`, and capture
   `panel[i] = { segments, frontierChains, heldFrac }` in field coords. Depositor Count, Balance,
   Seeding, and Settle are identical across the three; only `ag` differs → the eye reads the same

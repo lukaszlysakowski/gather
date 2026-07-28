@@ -23,9 +23,9 @@ const RED = '#A93B2A';
 
 // Progression triads: erosion aggression [left, center, right], strictly increasing.
 const PROGRESSIONS = {
-    Early: [0.15, 0.35, 0.70],
-    Rising: [0.30, 0.60, 1.00],
-    Late: [0.60, 1.00, 1.40]
+    Early: [0.12, 0.90, 1.80],
+    Rising: [0.22, 1.20, 2.60],
+    Late: [0.38, 1.55, 3.40]
 };
 
 const CONTROL_DEFS = [
