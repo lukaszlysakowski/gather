@@ -36,9 +36,8 @@ per panel in the browser. Lower Settle, or expect the wait at higher Count.
 - randomize / refresh · click canvas = new seed
 - **Exports:** `svg` (full composite), `png` (1×), `png 5x` (high-res raster), plus per-panel
   exports — `svg · per panel` and `png · per panel` (5×) — each writing three standalone files
-  (left / center / right), a clean square in its own coordinates with its border, streaks, its
-  slice of the red thread, and a per-panel signature (the right panel is mirrored, matching the
-  composition)
+  (left / center / right), a clean square in its own coordinates with its border, streaks, and its
+  slice of the red thread — no colophon (the right panel is mirrored, matching the composition)
 
 ## How it works
 
@@ -54,8 +53,8 @@ per panel in the browser. Lower Settle, or expect the wait at higher Count.
   The wings each contribute their single longest chain (they hold plenty of contested frontier);
   the dense CENTER holds very little frontier (it is barely eroded), so it stitches its several
   longest chains together — ordered left→right — so the thread still travels through the center.
-  The composite signature (bottom-right) is `Gather · seed N · date`; per-panel exports use
-  `Gather · seed N · <panel> · date`. (Held % is no longer printed on the art.)
+  The composite signature (bottom-right) is `Gather · seed N · date`; per-panel exports carry no
+  colophon (seed + date live in the filename). Held % is no longer printed on the art.
 
 ## Exports
 

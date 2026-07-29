@@ -694,9 +694,7 @@ function buildPanelSVG(i) {
     out += svgPass('Streaks-light', INK, 0.4, light);
     out += svgPass('Streaks-heavy', INK, 0.8, heavy);
     out += svgPass('Thread', RED, 1.7, threadPaths);
-    out += `  <g id="Signature" inkscape:groupmode="layer" inkscape:label="Signature">\n` +
-        `    <text x="24" y="${s - 24}" font-family="monospace" font-size="24" fill="${INK}">` +
-        `Gather · seed ${state.masterSeed} · ${PANEL_NAMES[i]} · ${dateStamp()}</text>\n  </g>\n`;
+    // per-panel exports carry NO colophon (the seed/date live in the filename)
     out += '</svg>\n';
     return out;
 }
@@ -749,12 +747,7 @@ function drawPanelTo(pg, i) {
         pg.noFill();
         pg.rect(0, 0, s, s);
     }
-    pg.noStroke();
-    pg.fill(INK);
-    pg.textSize(24);
-    pg.textAlign(LEFT, BASELINE);
-    pg.text(`Gather · seed ${state.masterSeed} · ${PANEL_NAMES[i]} · ${dateStamp()}`, 24, s - 24);
-    pg.noFill();
+    // per-panel exports carry NO colophon (the seed/date live in the filename)
 }
 
 function exportPanelPNGs(scale) {
