@@ -699,15 +699,23 @@ function buildPanelSVG(i) {
     return out;
 }
 
+// Download the three panels one at a time with a short gap — browsers throttle rapid successive
+// programmatic downloads and drop all but the first, so a synchronous loop only saved the left panel.
 function exportPanelSVGs() {
-    for (let i = 0; i < 3; i++) {
-        const blob = new Blob([buildPanelSVG(i)], { type: 'image/svg+xml' });
+    let i = 0;
+    (function next() {
+        if (i >= 3) return;
+        const idx = i++;
+        const blob = new Blob([buildPanelSVG(idx)], { type: 'image/svg+xml' });
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
-        a.download = `gather-seed${state.masterSeed}-${PANEL_NAMES[i]}.svg`;
+        a.download = `gather-seed${state.masterSeed}-${PANEL_NAMES[idx]}.svg`;
+        document.body.appendChild(a);
         a.click();
-        URL.revokeObjectURL(a.href);
-    }
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+        setTimeout(next, 400);
+    })();
 }
 
 function exportPNG(scale) {
@@ -750,15 +758,30 @@ function drawPanelTo(pg, i) {
     // per-panel exports carry NO colophon (the seed/date live in the filename)
 }
 
+// One panel at a time: render it, wait for its PNG blob (toBlob is async — saveCanvas + immediate
+// pg.remove() destroyed panels 2-3 before encoding), download, clean up, then do the next. The gap
+// also dodges the browser's rapid-download throttle that dropped all but the left panel.
 function exportPanelPNGs(scale) {
-    for (let i = 0; i < 3; i++) {
-        const rect = PANELS[i];
+    let i = 0;
+    (function next() {
+        if (i >= 3) return;
+        const idx = i++;
+        const rect = PANELS[idx];
         const pg = createGraphics(rect.s, rect.s);
         pg.pixelDensity(scale);
-        drawPanelTo(pg, i);
-        saveCanvas(pg, `gather-seed${state.masterSeed}-${PANEL_NAMES[i]}-${scale}x`, 'png');
-        pg.remove();
-    }
+        drawPanelTo(pg, idx);
+        pg.canvas.toBlob((blob) => {
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `gather-seed${state.masterSeed}-${PANEL_NAMES[idx]}-${scale}x.png`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+            pg.remove();
+            setTimeout(next, 400);
+        }, 'image/png');
+    })();
 }
 
 function setup() {
