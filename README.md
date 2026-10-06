@@ -37,9 +37,10 @@ per panel in the browser. Lower Settle, or expect the wait at higher Count.
 - **Exports:** `svg` (full composite), `png` (1×), `png 5x` (high-res raster), and
   `per panel (zip)` — one `.zip` holding all six per-panel files (3 SVG + 3 PNG at 5×). Each
   per-panel file is the **full 3830×1690 canvas** carrying one panel's border + streaks at their
-  true position plus the **complete cross-panel red thread** as its own layer, all in register —
-  overlay the three and they reconstruct the composite. No colophon on the panels (the right panel
-  is mirrored, matching the composition)
+  true position plus its slice of the **red thread, clipped to that panel's border** so the line
+  stays bundled inside its own frame. All three are in register — stack them and the red thread
+  runs continuously across the composite. No colophon on the panels (the right panel is mirrored,
+  matching the composition)
 
 ## How it works
 
@@ -64,9 +65,10 @@ Layered SVG pen passes (Borders / Streaks-light / Streaks-heavy / Thread / Signa
 multi-pen plotting; raster PNG at 1× (3830×1690) and 5× (19150×8450).
 
 The `per panel (zip)` export bundles all six per-panel files (3 SVG + 3 PNG) into one download.
-Each is the full triptych canvas with a single panel's ink + the whole red thread, in register, so
-they stack back into the composite — handy for plotting one panel per sheet (or one pen per panel)
-while keeping the red line continuous across them.
+Each is the full triptych canvas with a single panel's ink plus its slice of the red thread clipped
+to that panel's border, all in register — stacking them reconstructs the composite with the red
+line continuous across the panels. Handy for plotting one panel per sheet (or one pen per panel)
+with the red line kept inside each frame.
 
 ## Seeds
 

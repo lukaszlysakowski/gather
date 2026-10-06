@@ -628,10 +628,10 @@ function polyToPath(pts) {
     return d;
 }
 
-function svgPass(label, color, weight, paths) {
+function svgPass(label, color, weight, paths, extraAttrs) {
     if (!paths.length) return '';
     let s = `  <g id="${label}" inkscape:groupmode="layer" inkscape:label="${label}" ` +
-        `stroke="${color}" stroke-width="${weight}" fill="none" stroke-linecap="round" stroke-linejoin="round">\n`;
+        `stroke="${color}" stroke-width="${weight}" fill="none" stroke-linecap="round" stroke-linejoin="round"${extraAttrs ? ' ' + extraAttrs : ''}>\n`;
     for (const d of paths) s += `    <path d="${d}"/>\n`;
     s += '  </g>\n';
     return s;
@@ -688,11 +688,13 @@ function buildPanelSVG(i) {
     let out = '<?xml version="1.0" encoding="UTF-8"?>\n' +
         `<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" ` +
         `width="${TW}" height="${TH}" viewBox="0 0 ${TW} ${TH}">\n`;
+    // clip the red thread to THIS panel's border, so the line stays bundled inside its own frame
+    out += `  <defs><clipPath id="panelClip"><rect x="${rect.x0}" y="${rect.y0}" width="${rect.s}" height="${rect.s}"/></clipPath></defs>\n`;
     out += `  <rect width="${TW}" height="${TH}" fill="${PAPER}"/>\n`;
     out += svgPass('Border', INK, 0.9, ui.borders === 0 ? borderPaths : []);
     out += svgPass('Streaks-light', INK, 0.4, light);
     out += svgPass('Streaks-heavy', INK, 0.8, heavy);
-    out += svgPass('Thread', RED, 1.7, threadPaths);
+    out += svgPass('Thread', RED, 1.7, threadPaths, 'clip-path="url(#panelClip)"');
     // per-panel exports carry NO colophon (the seed/date live in the filename)
     out += '</svg>\n';
     return out;
@@ -796,7 +798,15 @@ function drawPanelTo(pg, i) {
     for (const seg of state.panels[i].segments) if (seg.cls === 0) drawPolyTo(pg, seg.pts.map(map));
     pg.strokeWeight(1.4);
     for (const seg of state.panels[i].segments) if (seg.cls === 1) drawPolyTo(pg, seg.pts.map(map));
-    if (state.thread.length >= 2) { pg.stroke(RED); pg.strokeWeight(3.2); drawPolyTo(pg, state.thread); }
+    if (state.thread.length >= 2) {
+        // clip the red thread to THIS panel's border so it stays bundled inside its own frame
+        pg.drawingContext.save();
+        pg.drawingContext.beginPath();
+        pg.drawingContext.rect(rect.x0, rect.y0, rect.s, rect.s);
+        pg.drawingContext.clip();
+        pg.stroke(RED); pg.strokeWeight(3.2); drawPolyTo(pg, state.thread);
+        pg.drawingContext.restore();
+    }
     if (ui.borders === 0) {
         pg.stroke(INK);
         pg.strokeWeight(2.0);
