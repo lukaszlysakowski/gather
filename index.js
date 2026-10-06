@@ -618,8 +618,7 @@ function setupControls() {
     document.getElementById('btn-svg').addEventListener('click', () => exportSVG());
     document.getElementById('btn-png').addEventListener('click', () => exportPNG(1));
     document.getElementById('btn-png5').addEventListener('click', () => exportPNG(5));
-    document.getElementById('btn-svg-panels').addEventListener('click', () => exportPanelSVGs());
-    document.getElementById('btn-png-panels').addEventListener('click', () => exportPanelPNGs(5));
+    document.getElementById('btn-panels').addEventListener('click', () => exportPanels(5));
 }
 
 function polyToPath(pts) {
@@ -672,24 +671,24 @@ function exportSVG() {
     URL.revokeObjectURL(a.href);
 }
 
-// One panel as a standalone SVG in LOCAL coords (origin at the panel's top-left, size s×s).
-// Uses panelMap (so any per-panel flip carries through) then shifts into the panel's own frame.
+// One panel as a standalone SVG on the FULL triptych canvas (TW×TH), in register with the others:
+// that panel's border + streaks at their true position, plus the COMPLETE red thread (the one line
+// crossing all three panels) as its own layer. Overlaying the three SVGs reconstructs the composite.
 const PANEL_NAMES = ['left', 'center', 'right'];
 function buildPanelSVG(i) {
-    const rect = PANELS[i], s = rect.s;
-    const local = pt => { const q = panelMap(pt, rect); return { x: q.x - rect.x0, y: q.y - rect.y0 }; };
+    const rect = PANELS[i];
+    const map = pt => panelMap(pt, rect);   // triptych coords (carries any per-panel flip)
     const light = [], heavy = [];
     for (const seg of state.panels[i].segments) {
-        const d = polyToPath(seg.pts.map(local));
+        const d = polyToPath(seg.pts.map(map));
         (seg.cls === 1 ? heavy : light).push(d);
     }
-    const thread = stitchThread(panelThreadChains(i), local); // same chains as the composite
-    const threadPaths = thread.length >= 2 ? [polyToPath(thread)] : [];
-    const borderPaths = [`M 0 0 L ${s} 0 L ${s} ${s} L 0 ${s} L 0 0`];
+    const borderPaths = [`M ${rect.x0} ${rect.y0} L ${rect.x0 + rect.s} ${rect.y0} L ${rect.x0 + rect.s} ${rect.y0 + rect.s} L ${rect.x0} ${rect.y0 + rect.s} L ${rect.x0} ${rect.y0}`];
+    const threadPaths = state.thread.length >= 2 ? [polyToPath(state.thread)] : [];   // the full cross-panel line
     let out = '<?xml version="1.0" encoding="UTF-8"?>\n' +
         `<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" ` +
-        `width="${s}" height="${s}" viewBox="0 0 ${s} ${s}">\n`;
-    out += `  <rect width="${s}" height="${s}" fill="${PAPER}"/>\n`;
+        `width="${TW}" height="${TH}" viewBox="0 0 ${TW} ${TH}">\n`;
+    out += `  <rect width="${TW}" height="${TH}" fill="${PAPER}"/>\n`;
     out += svgPass('Border', INK, 0.9, ui.borders === 0 ? borderPaths : []);
     out += svgPass('Streaks-light', INK, 0.4, light);
     out += svgPass('Streaks-heavy', INK, 0.8, heavy);
@@ -744,13 +743,28 @@ function downloadBlob(blob, filename) {
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
 
-function exportPanelSVGs() {
+// Single "per panel" export: ALL SIX files in one zip — 3 full-canvas SVGs (each carrying the whole
+// cross-panel red thread) + 3 panel PNGs. One download sidesteps the browser multiple-download gate.
+function exportPanels(scale) {
     const enc = new TextEncoder();
     const entries = [];
     for (let i = 0; i < 3; i++) {
         entries.push({ name: `gather-seed${state.masterSeed}-${PANEL_NAMES[i]}.svg`, bytes: enc.encode(buildPanelSVG(i)) });
     }
-    downloadBlob(makeZip(entries), `gather-seed${state.masterSeed}-panels-svg.zip`);
+    let i = 0;
+    (function next() {
+        if (i >= 3) { downloadBlob(makeZip(entries), `gather-seed${state.masterSeed}-panels.zip`); return; }
+        const idx = i++;
+        const rect = PANELS[idx];
+        const pg = createGraphics(rect.s, rect.s);
+        pg.pixelDensity(scale);
+        drawPanelTo(pg, idx);
+        pg.canvas.toBlob(async (blob) => {
+            entries.push({ name: `gather-seed${state.masterSeed}-${PANEL_NAMES[idx]}-${scale}x.png`, bytes: new Uint8Array(await blob.arrayBuffer()) });
+            pg.remove();
+            next();
+        }, 'image/png');
+    })();
 }
 
 function exportPNG(scale) {
@@ -793,24 +807,6 @@ function drawPanelTo(pg, i) {
     // per-panel exports carry NO colophon (the seed/date live in the filename)
 }
 
-// Render each panel, collect its PNG bytes (toBlob is async), then bundle all three into one zip.
-function exportPanelPNGs(scale) {
-    const entries = [];
-    let i = 0;
-    (function next() {
-        if (i >= 3) { downloadBlob(makeZip(entries), `gather-seed${state.masterSeed}-panels-png-${scale}x.zip`); return; }
-        const idx = i++;
-        const rect = PANELS[idx];
-        const pg = createGraphics(rect.s, rect.s);
-        pg.pixelDensity(scale);
-        drawPanelTo(pg, idx);
-        pg.canvas.toBlob(async (blob) => {
-            entries.push({ name: `gather-seed${state.masterSeed}-${PANEL_NAMES[idx]}-${scale}x.png`, bytes: new Uint8Array(await blob.arrayBuffer()) });
-            pg.remove();
-            next();
-        }, 'image/png');
-    })();
-}
 
 function setup() {
     const c = createCanvas(TW, TH);
