@@ -743,8 +743,9 @@ function downloadBlob(blob, filename) {
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
 
-// Single "per panel" export: ALL SIX files in one zip — 3 full-canvas SVGs (each carrying the whole
-// cross-panel red thread) + 3 panel PNGs. One download sidesteps the browser multiple-download gate.
+// Single "per panel" export: ALL SIX files in one zip — 3 SVGs + 3 PNGs, each a full triptych
+// canvas carrying one panel's ink + the whole cross-panel red thread (all in register). One
+// download sidesteps the browser multiple-download gate.
 function exportPanels(scale) {
     const enc = new TextEncoder();
     const entries = [];
@@ -755,8 +756,7 @@ function exportPanels(scale) {
     (function next() {
         if (i >= 3) { downloadBlob(makeZip(entries), `gather-seed${state.masterSeed}-panels.zip`); return; }
         const idx = i++;
-        const rect = PANELS[idx];
-        const pg = createGraphics(rect.s, rect.s);
+        const pg = createGraphics(TW, TH);   // full triptych canvas, in register with the SVGs
         pg.pixelDensity(scale);
         drawPanelTo(pg, idx);
         pg.canvas.toBlob(async (blob) => {
@@ -783,26 +783,25 @@ function drawPolyTo(pg, pts) {
     pg.endShape();
 }
 
-// render one panel into a graphics buffer in LOCAL coords (origin at the panel's top-left) — the
-// raster analog of buildPanelSVG, so a per-panel PNG matches the per-panel SVG (flip carried
-// through panelMap; same stitched thread as the composite).
+// Render one panel onto a FULL-canvas (TW×TH) buffer — the raster analog of buildPanelSVG: that
+// panel's streaks + border at their true position, plus the COMPLETE cross-panel red thread, all
+// in register with the other panels (flip carried through panelMap).
 function drawPanelTo(pg, i) {
-    const rect = PANELS[i], s = rect.s;
-    const local = pt => { const q = panelMap(pt, rect); return { x: q.x - rect.x0, y: q.y - rect.y0 }; };
+    const rect = PANELS[i];
+    const map = pt => panelMap(pt, rect);   // triptych coords
     pg.background(PAPER);
     pg.noFill();
     pg.stroke(INK);
     pg.strokeWeight(0.8);
-    for (const seg of state.panels[i].segments) if (seg.cls === 0) drawPolyTo(pg, seg.pts.map(local));
+    for (const seg of state.panels[i].segments) if (seg.cls === 0) drawPolyTo(pg, seg.pts.map(map));
     pg.strokeWeight(1.4);
-    for (const seg of state.panels[i].segments) if (seg.cls === 1) drawPolyTo(pg, seg.pts.map(local));
-    const thread = stitchThread(panelThreadChains(i), local);
-    if (thread.length >= 2) { pg.stroke(RED); pg.strokeWeight(3.2); drawPolyTo(pg, thread); }
+    for (const seg of state.panels[i].segments) if (seg.cls === 1) drawPolyTo(pg, seg.pts.map(map));
+    if (state.thread.length >= 2) { pg.stroke(RED); pg.strokeWeight(3.2); drawPolyTo(pg, state.thread); }
     if (ui.borders === 0) {
         pg.stroke(INK);
         pg.strokeWeight(2.0);
         pg.noFill();
-        pg.rect(0, 0, s, s);
+        pg.rect(rect.x0, rect.y0, rect.s, rect.s);
     }
     // per-panel exports carry NO colophon (the seed/date live in the filename)
 }
