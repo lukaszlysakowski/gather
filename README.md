@@ -34,10 +34,12 @@ per panel in the browser. Lower Settle, or expect the wait at higher Count.
   (no re-simulation) and are excluded from randomize. Borders Off hides the three panel frames
   on the canvas and in every export (composite + per-panel).
 - randomize / refresh · click canvas = new seed
-- **Exports:** `svg` (full composite), `png` (1×), `png 5x` (high-res raster), plus per-panel
-  exports — `svg · per panel` and `png · per panel` (5×) — each writing three standalone files
-  (left / center / right), a clean square in its own coordinates with its border, streaks, and its
-  slice of the red thread — no colophon (the right panel is mirrored, matching the composition)
+- **Exports:** `svg` (full composite), `png` (1×), `png 5x` (high-res raster), and
+  `per panel (zip)` — one `.zip` holding all six per-panel files (3 SVG + 3 PNG at 5×). Each
+  per-panel file is the **full 3830×1690 canvas** carrying one panel's border + streaks at their
+  true position plus the **complete cross-panel red thread** as its own layer, all in register —
+  overlay the three and they reconstruct the composite. No colophon on the panels (the right panel
+  is mirrored, matching the composition)
 
 ## How it works
 
@@ -54,12 +56,17 @@ per panel in the browser. Lower Settle, or expect the wait at higher Count.
   the dense CENTER holds very little frontier (it is barely eroded), so it stitches its several
   longest chains together — ordered left→right — so the thread still travels through the center.
   The composite signature (bottom-right) is `Gather · seed N · date`; per-panel exports carry no
-  colophon (seed + date live in the filename). Held % is no longer printed on the art.
+  colophon (the seed and panel name are in the filename). Held % is no longer printed on the art.
 
 ## Exports
 
 Layered SVG pen passes (Borders / Streaks-light / Streaks-heavy / Thread / Signature) for
-multi-pen plotting; PNG at 1x (3830×1690) and 4x (15320×6760).
+multi-pen plotting; raster PNG at 1× (3830×1690) and 5× (19150×8450).
+
+The `per panel (zip)` export bundles all six per-panel files (3 SVG + 3 PNG) into one download.
+Each is the full triptych canvas with a single panel's ink + the whole red thread, in register, so
+they stack back into the composite — handy for plotting one panel per sheet (or one pen per panel)
+while keeping the red line continuous across them.
 
 ## Seeds
 
