@@ -61,6 +61,16 @@ per panel in the browser. Lower Settle, or expect the wait at higher Count.
 Layered SVG pen passes (Borders / Streaks-light / Streaks-heavy / Thread / Signature) for
 multi-pen plotting; PNG at 1x (3830×1690) and 4x (15320×6760).
 
+## Seeds
+
+Notable renders. The seed alone does not reproduce an image — set the controls first, then the
+seed (via a seed input, or `state.masterSeed = <n>; regenerate(false)` in the console):
+
+- **385381612** — Scale `Broad` · Strength `High` · Count `Med` · Balance `More-eroders` ·
+  Seeding `Edge` · Progression `Rising` · Settle `Off` · Wobble `Off` · Borders `On`.
+  Sparse, eroded wings (held ~0/33/0) with a single curled ridge and a tight black eddy in the
+  center; the red thread traces across all three panels.
+
 ## Family
 
 [palimpsest](https://github.com/lukaszlysakowski/palimpsest) ·

@@ -699,23 +699,58 @@ function buildPanelSVG(i) {
     return out;
 }
 
-// Download the three panels one at a time with a short gap — browsers throttle rapid successive
-// programmatic downloads and drop all but the first, so a synchronous loop only saved the left panel.
+// --- minimal dependency-free ZIP (store / no compression) ---
+// The per-panel exports bundle their three files into ONE .zip so a single download fires.
+// Browsers gate *multiple* programmatic downloads behind a permission prompt and silently drop
+// all but the first, so looping three saves only ever yielded the left panel; one zip sidesteps it.
+function crc32(bytes) {
+    if (!crc32.table) {
+        const t = new Uint32Array(256);
+        for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1); t[n] = c >>> 0; }
+        crc32.table = t;
+    }
+    const t = crc32.table; let crc = 0xFFFFFFFF;
+    for (let i = 0; i < bytes.length; i++) crc = t[(crc ^ bytes[i]) & 0xFF] ^ (crc >>> 8);
+    return (crc ^ 0xFFFFFFFF) >>> 0;
+}
+function makeZip(entries) {
+    const enc = new TextEncoder();
+    const u16 = v => [v & 0xFF, (v >>> 8) & 0xFF];
+    const u32 = v => [v & 0xFF, (v >>> 8) & 0xFF, (v >>> 16) & 0xFF, (v >>> 24) & 0xFF];
+    const parts = []; const central = []; let offset = 0;
+    for (const e of entries) {
+        const name = enc.encode(e.name), data = e.bytes, crc = crc32(data);
+        const lh = [].concat(u32(0x04034b50), u16(20), u16(0), u16(0), u16(0), u16(0), u32(crc), u32(data.length), u32(data.length), u16(name.length), u16(0));
+        parts.push(new Uint8Array(lh), name, data);
+        central.push({ crc, size: data.length, name, offset });
+        offset += lh.length + name.length + data.length;
+    }
+    const cdStart = offset; const cd = [];
+    for (const c of central) {
+        const ch = [].concat(u32(0x02014b50), u16(20), u16(20), u16(0), u16(0), u16(0), u16(0), u32(c.crc), u32(c.size), u32(c.size), u16(c.name.length), u16(0), u16(0), u16(0), u16(0), u32(0), u32(c.offset));
+        cd.push(new Uint8Array(ch), c.name);
+        offset += ch.length + c.name.length;
+    }
+    const eocd = [].concat(u32(0x06054b50), u16(0), u16(0), u16(central.length), u16(central.length), u32(offset - cdStart), u32(cdStart), u16(0));
+    return new Blob([...parts, ...cd, new Uint8Array(eocd)], { type: 'application/zip' });
+}
+function downloadBlob(blob, filename) {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
 function exportPanelSVGs() {
-    let i = 0;
-    (function next() {
-        if (i >= 3) return;
-        const idx = i++;
-        const blob = new Blob([buildPanelSVG(idx)], { type: 'image/svg+xml' });
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = `gather-seed${state.masterSeed}-${PANEL_NAMES[idx]}.svg`;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-        setTimeout(next, 400);
-    })();
+    const enc = new TextEncoder();
+    const entries = [];
+    for (let i = 0; i < 3; i++) {
+        entries.push({ name: `gather-seed${state.masterSeed}-${PANEL_NAMES[i]}.svg`, bytes: enc.encode(buildPanelSVG(i)) });
+    }
+    downloadBlob(makeZip(entries), `gather-seed${state.masterSeed}-panels-svg.zip`);
 }
 
 function exportPNG(scale) {
@@ -758,28 +793,21 @@ function drawPanelTo(pg, i) {
     // per-panel exports carry NO colophon (the seed/date live in the filename)
 }
 
-// One panel at a time: render it, wait for its PNG blob (toBlob is async — saveCanvas + immediate
-// pg.remove() destroyed panels 2-3 before encoding), download, clean up, then do the next. The gap
-// also dodges the browser's rapid-download throttle that dropped all but the left panel.
+// Render each panel, collect its PNG bytes (toBlob is async), then bundle all three into one zip.
 function exportPanelPNGs(scale) {
+    const entries = [];
     let i = 0;
     (function next() {
-        if (i >= 3) return;
+        if (i >= 3) { downloadBlob(makeZip(entries), `gather-seed${state.masterSeed}-panels-png-${scale}x.zip`); return; }
         const idx = i++;
         const rect = PANELS[idx];
         const pg = createGraphics(rect.s, rect.s);
         pg.pixelDensity(scale);
         drawPanelTo(pg, idx);
-        pg.canvas.toBlob((blob) => {
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            a.download = `gather-seed${state.masterSeed}-${PANEL_NAMES[idx]}-${scale}x.png`;
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
-            setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+        pg.canvas.toBlob(async (blob) => {
+            entries.push({ name: `gather-seed${state.masterSeed}-${PANEL_NAMES[idx]}-${scale}x.png`, bytes: new Uint8Array(await blob.arrayBuffer()) });
             pg.remove();
-            setTimeout(next, 400);
+            next();
         }, 'image/png');
     })();
 }
