@@ -1,5 +1,7 @@
 # Gather
 
+**[▶ Make it live →](https://lukaszlysakowski.github.io/gather/)** — open the interactive sketch in your browser.
+
 One contested ground, three moments. A single [Attrition](https://github.com/lukaszlysakowski/attrition)
 field — the same seed, the same shared curl terrain — rendered three times at three erosion
 levels. The dominant CENTER panel carries the densest, most-intact render (the ground at its
